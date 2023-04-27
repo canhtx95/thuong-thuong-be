@@ -28,11 +28,11 @@ export class UsersService {
   async create(dto: CreateUserDto): Promise<BaseResponse> {
     const queryRunner = await this.managerTransaction.createTransaction();
     try {
-      const userRepositoryTransaction = queryRunner.manager.getRepository(UserEntity);
+      const userRepositoryTransaction =
+        queryRunner.manager.getRepository(UserEntity);
       const checkUser = await userRepositoryTransaction.findOneBy({
         username: dto.username,
       });
-      console.log(checkUser)
       if (checkUser) {
         throw new Error('Tài khoản đã tồn tại');
       }
@@ -42,7 +42,7 @@ export class UsersService {
       const result = await userRepositoryTransaction.save(user);
       const accessToken = '1';
       const refreshToken = '2';
-      await queryRunner.commitTransaction();
+      await this.managerTransaction.commit();
       return new BaseResponse(
         'Đăng ký tài khoản thành công',
         {
@@ -54,7 +54,7 @@ export class UsersService {
         200,
       );
     } catch (error) {
-      await queryRunner.rollbackTransaction();
+      await this.managerTransaction.rollBack();
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }

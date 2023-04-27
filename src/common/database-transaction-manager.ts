@@ -18,11 +18,11 @@ export class DatabaseTransactionManagerService {
     await this.queryRunner.startTransaction();
     return this.queryRunner;
   }
-  async commitTransaction() {
+  async commit() {
     await this.queryRunner.commitTransaction();
     await this.queryRunner.release();
   }
-  async rollBackTransaction() {
+  async rollBack() {
     await this.queryRunner.rollbackTransaction();
     await this.queryRunner.release();
   }

@@ -10,11 +10,10 @@ if (!envFound) {
 export const databaseConfig: TypeOrmModuleOptions = {
   type: 'mysql',
   host: 'localhost',
-  port: 3305,
+  port: 33066,
   username: 'root',
   password: '123456',
   database: 'thuongthuong',
   entities: [join(__dirname, '/../**/**.entity{.ts,.js}')],
   synchronize: true,
-  
 };
