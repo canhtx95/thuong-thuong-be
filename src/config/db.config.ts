@@ -1,5 +1,4 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { addTransactionalDataSource } from 'typeorm-transactional';
 import { config, DotenvConfigOutput } from 'dotenv';
 import { join } from 'path';
 const envFound: DotenvConfigOutput = config();
