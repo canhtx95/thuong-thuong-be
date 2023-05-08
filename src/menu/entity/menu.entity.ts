@@ -1,3 +1,4 @@
+import { ArticleEntity } from 'src/article/entity/article.entity';
 import { BaseEntity } from 'src/common/entity/base.entity';
 import {
     Entity,
@@ -22,8 +23,7 @@ export class MenuEntity extends BaseEntity {
     isActive: boolean;
     @Column({ name: 'parent_id', nullable: true })
     parentId: number
-    @Column({ name: 'other_language', default: '' })
-    otherLanguage: string;
+
     @Column({ name: 'soft_deleted', default: false })
     softDeleted: boolean;
     @Column({ default: 0 })
@@ -36,4 +36,6 @@ export class MenuEntity extends BaseEntity {
     @JoinColumn({ name: 'parent_id' })
     parent: MenuEntity
 
+    @OneToMany(() => ArticleEntity, (article) => article.menu, { cascade: ['insert', 'update'] })
+    articles: ArticleEntity[];
 }

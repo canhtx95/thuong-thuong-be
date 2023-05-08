@@ -1,8 +1,13 @@
-import { BaseEntity } from 'src/common/entity/base.entity';
-import { Entity, Column, PrimaryGeneratedColumn, Index } from 'typeorm';
-
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+} from 'typeorm';
 @Entity({ name: 'users' })
-export class UserEntity extends BaseEntity {
+export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
   @Index({ unique: true })
   uuid: string;
@@ -10,4 +15,8 @@ export class UserEntity extends BaseEntity {
   username: string;
   @Column()
   password: string;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
+  createdAt: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
+  updatedAt: Date;
 }

@@ -1,15 +1,43 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { UsersModule } from './users/users.module';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { databaseConfig } from './config/db.config';
-import { AuthModule } from './auth/auth.module';
-import { CategoryModule } from './category/category.module';
-import { ProductModule } from './product/product.module';
+import { Module } from '@nestjs/common'
+import { AppController } from './app.controller'
+import { UsersModule } from './users/users.module'
+import { TypeOrmModule } from '@nestjs/typeorm'
+import { databaseConfig } from './config/db.config'
+import { AuthModule } from './auth/auth.module'
+import { CategoryModule } from './category/category.module'
+import { ProductModule } from './product/product.module'
+import { MenuModule } from './menu/menu.module'
+import { ArticleModule } from './article/article.module'
+import { ConfigModule } from '@nestjs/config'
+import { OrderModule } from './order/order.module'
+import { WebInformationModule } from './web-information/web-information.module'
+import { ServeStaticModule } from '@nestjs/serve-static/dist/serve-static.module'
+import { join } from 'path'
+import { MulterModule } from '@nestjs/platform-express'
 
 @Module({
-  imports: [TypeOrmModule.forRoot(databaseConfig), UsersModule, AuthModule, CategoryModule, ProductModule],
+  imports: [
+    TypeOrmModule.forRoot(databaseConfig),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', '/uploads'), // <-- path to the static files
+      serveRoot: '/uploads/',
+    }),
+    MulterModule.register({
+      dest: './uploads',
+    }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    MenuModule,
+    ArticleModule,
+    UsersModule,
+    AuthModule,
+    CategoryModule,
+    ProductModule,
+    OrderModule,
+    WebInformationModule,
+  ],
   controllers: [AppController],
   providers: [],
 })
-export class AppModule { }
+export class AppModule {}

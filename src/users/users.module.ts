@@ -12,4 +12,4 @@ import { DatabaseTransactionManagerService } from 'src/common/database-transacti
   providers: [UsersService, JwtService, DatabaseTransactionManagerService],
   exports: [UsersService],
 })
-export class UsersModule {}
+export class UsersModule { }

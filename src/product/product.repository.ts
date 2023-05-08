@@ -20,8 +20,8 @@ export class CustomProductRepository {
 
   ) { }
 
-  getProducts(dto: GetProductsDto) {
-    const products = this.productRepository
+  async getProductsByCategory(dto: GetProductsDto): Promise<any> {
+    const products = await this.categoryRepository
       .createQueryBuilder('cate')
       .leftJoinAndSelect('cate.products', 'product')
       .select([
@@ -31,14 +31,14 @@ export class CustomProductRepository {
         'product.id',
         'product.name',
         'product.link',
+        'product.otherLanguage'
       ])
-      .where(`cate.id=:categoryId OR cate.link=:categoryLink OR product.id =:productId OR product.link =:productLink`, {
+      .where(`cate.id=:categoryId OR cate.link=:categoryLink`, {
         categoryId: dto.categoryId,
         categoryLink: dto.categoryLink,
-        productId: dto.productId,
-        productLink: dto.productLink,
       })
-      .getMany();
+      .getOne();
+    return products
   }
   async getProductDetail(dto: GetProductDetailDto): Promise<any> {
     let product = await this.productRepository

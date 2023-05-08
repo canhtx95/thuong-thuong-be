@@ -1,15 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty } from 'class-validator';
 
-export class UpdateProductStatusDto {
+export class UpdateStatusDto {
 
   @ApiProperty({ example: 1 })
   @IsNotEmpty()
   id: number;
 
   @ApiProperty({ example: true })
-  isActive: number;
+  isActive: boolean;
 
   @ApiProperty({ example: true })
-  softDeleted: number;
+  softDeleted: boolean;
 }

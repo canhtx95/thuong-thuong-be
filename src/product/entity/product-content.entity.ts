@@ -18,12 +18,13 @@ export class ProductContentEntity {
   @PrimaryGeneratedColumn()
   @Index({ unique: true })
   id: number;
-  @Column({ default: 'VI' })
+  @Column()
   language: string;
   @Column({ type: 'text' })
   content: string;
   @Column({ name: 'product_id' })
   productId: number;
+
   @ManyToOne(() => ProductEntity, (product) => product.content)
   @JoinColumn({ name: 'product_id' })
   product: ProductEntity[];

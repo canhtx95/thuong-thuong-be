@@ -20,8 +20,6 @@ export class ProductEntity extends BaseEntity {
   name: string;
   @Column()
   link: string;
-  @Column({ name: 'other_language', default: '' })
-  otherLanguage: string;
   @Column({ default: true })
   isActive: boolean;
   @Column({ nullable: true })
@@ -32,7 +30,7 @@ export class ProductEntity extends BaseEntity {
   imgLink: boolean;
 
   @Column({ name: 'category_id' })
-  categoryId: boolean;
+  categoryId: string;
   @ManyToOne(() => CategoryEntity, (category) => category.products)
   @JoinColumn({ name: 'category_id' })
   category: CategoryEntity;

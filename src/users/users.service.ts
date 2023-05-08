@@ -5,6 +5,8 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
+
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
 import { UserEntity } from './entity/users.entity';
@@ -12,7 +14,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { LoginDto } from 'src/auth/dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { plainToClass } from 'class-transformer';
-import * as bcrypt from 'bcrypt';
 import { BaseResponse } from 'src/common/response/base.response';
 import { DatabaseTransactionManagerService } from 'src/common/database-transaction-manager';
 
@@ -23,7 +24,7 @@ export class UsersService {
     private readonly userRepository: Repository<UserEntity>,
     private jwtService: JwtService,
     private managerTransaction: DatabaseTransactionManagerService,
-  ) {}
+  ) { }
 
   async create(dto: CreateUserDto): Promise<BaseResponse> {
     const queryRunner = await this.managerTransaction.createTransaction();
@@ -86,5 +87,10 @@ export class UsersService {
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.FORBIDDEN);
     }
+  }
+  async findOne(username: string) {
+    return await this.userRepository.findOneBy({
+      username: username,
+    });
   }
 }

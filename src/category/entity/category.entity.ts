@@ -23,8 +23,6 @@ export class CategoryEntity extends BaseEntity {
   parent: string;
   @Column({ default: false })
   isHighlight: boolean;
-  @Column({ name: 'other_language', default: '' })
-  otherLanguage: string;
   @Column({ name: 'soft_deleted', default: false })
   softDeleted: boolean;
   @Column({ default: 0 })

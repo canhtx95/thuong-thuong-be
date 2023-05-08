@@ -7,7 +7,7 @@ import { BaseResponse } from 'src/common/response/base.response';
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersSerivce: UsersService) {}
+  constructor(private readonly usersSerivce: UsersService) { }
 
   @ApiOperation({ summary: 'Tạo mới user' })
   @Post('register')

@@ -10,25 +10,22 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { CategoryEntity } from './entity/category.entity';
 import { EntityManager, Repository } from 'typeorm';
 import { plainToClass } from 'class-transformer';
-import { join } from 'path';
 import { getCategoryDto } from './dto/get-category.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CustomCategoryRepository } from './category.repository';
-import { LANGUAGE } from 'src/common/constant';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { link } from 'fs';
-import { ProductEntity } from 'src/product/entity/product.entity';
 import { UpdateCategoryStatusDto } from './dto/update-category-status.dto';
+import { CommonService } from 'src/common/service/service.common';
 @Injectable()
-export class CategoryService {
+export class CategoryService extends CommonService {
   constructor(
     @InjectRepository(CategoryEntity)
     private readonly categoryRepository: Repository<CategoryEntity>,
     private readonly customCategoryRepository: CustomCategoryRepository,
     private readonly managerTransaction: DatabaseTransactionManagerService,
-  ) { }
+  ) { super() }
 
-  async getAllCategories(): Promise<BaseResponse> {
+  async getAllCategories(dto: getCategoryDto): Promise<BaseResponse> {
     try {
       let data = await this.customCategoryRepository.findAll();
       data.sort((a, b) => {
@@ -43,7 +40,12 @@ export class CategoryService {
         return level1 - level2
 
       })
-      this.arrangeCategory(data);
+      this.arrangeCategory(data, dto.language);
+      for (const e of data) {
+        const name = this.getNameMultiLanguage(dto.language, e.otherLanguage)
+        e.name = name ? name : e.name
+        delete e.otherLanguage
+      }
       return new BaseResponse('Danh sách danh mục sản phẩm', data, 200);
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
@@ -221,8 +223,11 @@ export class CategoryService {
     })
   }
 
-  async arrangeCategory(categories: CategoryEntity[]) {
+  async arrangeCategory(categories: CategoryEntity[], language: string) {
     const element = categories[categories.length - 1];
+    const name = this.getNameMultiLanguage(language, element.otherLanguage)
+    element.name = name ? name : element.name
+    delete element.otherLanguage
     if (element.parent.trim() == '') {
       return;
     }
@@ -234,6 +239,6 @@ export class CategoryService {
       }
     }
     categories.pop();
-    this.arrangeCategory(categories);
+    this.arrangeCategory(categories, language);
   }
 }

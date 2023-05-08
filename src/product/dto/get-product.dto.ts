@@ -3,8 +3,8 @@ import { ApiProperty } from '@nestjs/swagger';
 
 
 export class GetProductsDto extends BaseDto {
-    productId: number;
-    productLink: string;
+    // productId: number;
+    // productLink: string;
     categoryId: number;
     categoryLink: string;
 
