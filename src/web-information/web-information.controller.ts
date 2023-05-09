@@ -1,34 +1,45 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { WebInformationService } from './web-information.service';
-import { CreateWebInformationDto } from './dto/create-web-information.dto';
-import { UpdateWebInformationDto } from './dto/update-web-information.dto';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common'
+import { WebInformationService } from './web-information.service'
+import { WebInformationDto } from './dto/web-information.dto'
+import { BaseResponse } from 'src/common/response/base.response'
 
 @Controller('web-information')
 export class WebInformationController {
-  constructor(private readonly webInformationService: WebInformationService) {}
+  constructor (private readonly webInformationService: WebInformationService) {}
 
   @Post()
-  create(@Body() createWebInformationDto: CreateWebInformationDto) {
-    return this.webInformationService.create(createWebInformationDto);
+  async create (@Body() dto: WebInformationDto): Promise<BaseResponse> {
+    return this.webInformationService.create(dto)
   }
 
   @Get()
-  findAll() {
-    return this.webInformationService.findAll();
+  async findAll (): Promise<BaseResponse> {
+    return this.webInformationService.findAll()
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.webInformationService.findOne(+id);
+  async findOne (@Param('id') id: string): Promise<BaseResponse> {
+    return this.webInformationService.findOne(+id)
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateWebInformationDto: UpdateWebInformationDto) {
-    return this.webInformationService.update(+id, updateWebInformationDto);
+  @Patch()
+  async update (
+    // @Param('id') id: string,
+    @Body() dto: WebInformationDto,
+  ): Promise<BaseResponse> {
+    return this.webInformationService.update(dto)
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.webInformationService.remove(+id);
+  async remove (@Param('id') id: string): Promise<BaseResponse> {
+    return this.webInformationService.remove(+id)
   }
 }

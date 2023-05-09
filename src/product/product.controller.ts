@@ -6,6 +6,8 @@ import {
   Body,
   UploadedFiles,
   UseInterceptors,
+  Delete,
+  Param,
 } from '@nestjs/common'
 
 import { BaseResponse } from 'src/common/response/base.response'
@@ -69,5 +71,9 @@ export class ProductController {
     @UploadedFiles() files: Array<Express.Multer.File>,
   ): Promise<any> {
     return files
+  }
+  @Delete(':id')
+  removeProduct (@Param('id') id: number) {
+    return this.productService.removeProduct(+id)
   }
 }

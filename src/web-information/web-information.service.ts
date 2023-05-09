@@ -1,26 +1,65 @@
-import { Injectable } from '@nestjs/common';
-import { CreateWebInformationDto } from './dto/create-web-information.dto';
-import { UpdateWebInformationDto } from './dto/update-web-information.dto';
-
+import { WebInformationDto } from './dto/web-information.dto'
+import { BaseResponse } from 'src/common/response/base.response'
+import { InjectRepository } from '@nestjs/typeorm'
+import { WebInformationEntity } from './entities/web-information.entity'
+import { Repository } from 'typeorm'
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  BadRequestException,
+} from '@nestjs/common'
+import { plainToClass } from 'class-transformer'
 @Injectable()
 export class WebInformationService {
-  create(createWebInformationDto: CreateWebInformationDto) {
-    return 'This action adds a new webInformation';
+  constructor (
+    @InjectRepository(WebInformationEntity)
+    private readonly repository: Repository<WebInformationEntity>,
+  ) {}
+
+  async create (dto: WebInformationDto): Promise<BaseResponse> {
+    try {
+      const web = plainToClass(WebInformationEntity, dto)
+      const result = await this.repository.save(web)
+      const response = new BaseResponse('Thành công', result)
+      return response
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }
   }
 
-  findAll() {
-    return `This action returns all webInformation`;
+  async findAll (): Promise<BaseResponse> {
+    const response = new BaseResponse(
+      'Thành công',
+      await this.repository.find(),
+    )
+    return response
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} webInformation`;
+  async findOne (id: number): Promise<BaseResponse> {
+    return new BaseResponse(
+      'Thành công',
+      await this.repository.findOneBy({ id }),
+    )
   }
 
-  update(id: number, updateWebInformationDto: UpdateWebInformationDto) {
-    return `This action updates a #${id} webInformation`;
+  async update (dto: WebInformationDto): Promise<BaseResponse> {
+    try {
+      const web = plainToClass(WebInformationEntity, dto)
+      delete web.key
+      const result = await this.repository.save(web)
+      const response = new BaseResponse('Thành công', result)
+      return response
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} webInformation`;
+  async remove (id: number): Promise<BaseResponse> {
+    const response = new BaseResponse(
+      'Xóa thành công',
+      await this.repository.delete(id),
+    )
+    return response
   }
 }

@@ -1,10 +1,6 @@
 import { DataSource, QueryRunner } from 'typeorm';
 import {
-  BadRequestException,
   Injectable,
-  ForbiddenException,
-  HttpException,
-  HttpStatus,
 } from '@nestjs/common';
 @Injectable()
 export class DatabaseTransactionManagerService {

@@ -1,4 +1,4 @@
-import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express'
+import { FilesInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
 import { BadRequestException } from '@nestjs/common'
 export const imageFileFilter = (req, file, callback) => {
@@ -16,7 +16,6 @@ export function configStorage (dest: string) {
     storage: diskStorage({
       destination: `./uploads/${dest}`,
       filename: (req, file, cb) => {
-        console.log(file)
         return cb(null, file.originalname)
       },
     }),

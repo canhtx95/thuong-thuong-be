@@ -67,7 +67,6 @@ export class ProductService extends CommonService {
       const category = await this.customProductRepository.getProductsByCategory(
         dto,
       )
-      console.log(category.products)
       for (const p of category.products) {
         const name = this.getNameMultiLanguage(dto.language, p.otherLanguage)
         p.name = name ? name : p.name
@@ -152,6 +151,15 @@ export class ProductService extends CommonService {
       return response
     } catch (error) {
       await this.managerTransaction.rollBack()
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }
+  }
+  async removeProduct (id: number): Promise<BaseResponse> {
+    try {
+      const products = await this.productRepository.delete(id)
+      const response = new BaseResponse('Xóa thành công', products)
+      return response
+    } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
   }

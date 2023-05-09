@@ -36,7 +36,6 @@ export class ArticleService extends CommonService {
             } else {
                 throw new Error('Bài viết không tồn tại')
             }
-            console.log(articles)
             for (const article of articles) {
                 const name = this.getNameMultiLanguage(dto.language, article.otherLanguage);
                 article.name = name ? name : article.name

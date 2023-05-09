@@ -15,6 +15,7 @@ import { getArticleDto } from './dto/get-article.dto'
 import { UpdateStatusDto } from 'src/common/dto/update-status.dto'
 import { JwtAuthGuard, PublicEndpoint } from 'src/auth/guard/jwt.guard'
 import { FileInterceptorArticle } from 'src/config/upload-image.config'
+import { Multer } from 'multer'
 
 @ApiTags('Bài viết - article')
 @UseGuards(JwtAuthGuard)

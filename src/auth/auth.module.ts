@@ -12,7 +12,7 @@ import { JwtStrategy } from './strategy/jwt.strategy';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({}),
+    ConfigModule,
     UsersModule,
     PassportModule,
     JwtModule.register({}),

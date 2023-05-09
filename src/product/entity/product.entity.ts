@@ -1,6 +1,7 @@
-import { CategoryEntity } from 'src/category/entity/category.entity';
-import { BaseEntity } from 'src/common/entity/base.entity';
-import { ProductContentEntity } from 'src/product/entity/product-content.entity';
+import { CategoryEntity } from 'src/category/entity/category.entity'
+import { BaseEntity } from 'src/common/entity/base.entity'
+import { OrderEntity } from 'src/order/entities/order.entity'
+import { ProductContentEntity } from 'src/product/entity/product-content.entity'
 import {
   Entity,
   Column,
@@ -9,36 +10,40 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
-} from 'typeorm';
+  OneToOne,
+} from 'typeorm'
 
 @Entity({ name: 'product' })
 export class ProductEntity extends BaseEntity {
   @PrimaryGeneratedColumn()
   @Index({ unique: true })
-  id: number;
+  id: number
   @Column()
-  name: string;
+  name: string
   @Column()
-  link: string;
+  link: string
   @Column({ default: true })
-  isActive: boolean;
+  isActive: boolean
   @Column({ nullable: true })
-  price: number;
+  price: number
   @Column({ name: 'soft_deleted', default: false })
-  softDeleted: boolean;
+  softDeleted: boolean
   @Column({ name: 'img_link', nullable: true })
-  imgLink: boolean;
+  imgLink: boolean
 
   @Column({ name: 'category_id' })
-  categoryId: string;
-  @ManyToOne(() => CategoryEntity, (category) => category.products)
+  categoryId: string
+  @ManyToOne(() => CategoryEntity, category => category.products)
   @JoinColumn({ name: 'category_id' })
-  category: CategoryEntity;
+  category: CategoryEntity
 
-  @OneToMany(
-    () => ProductContentEntity,
-    (content) => content.product, { cascade: ['insert', 'update'] }
-  )
-  content: ProductContentEntity;
+  @OneToMany(() => ProductContentEntity, content => content.product, {
+    cascade: ['insert', 'update'],
+  })
+  content: ProductContentEntity[]
 
+  @OneToOne(() => OrderEntity, order => order.product, {
+    cascade: ['insert', 'update', 'remove', 'soft-remove'],
+  })
+  order: OrderEntity
 }

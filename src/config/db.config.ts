@@ -1,18 +1,17 @@
-import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { config, DotenvConfigOutput } from 'dotenv';
-import { join } from 'path';
-const envFound: DotenvConfigOutput = config();
+import { config, DotenvConfigOutput } from 'dotenv'
+import { join } from 'path'
+const envFound: DotenvConfigOutput = config()
 if (!envFound) {
-  throw new Error('.env file was not found.');
+  throw new Error('.env file was not found.')
 }
 
-export const databaseConfig: TypeOrmModuleOptions = {
-  type: 'mysql',
-  host: 'localhost',
-  port: 33066,
-  username: 'root',
-  password: '123456',
-  database: 'thuongthuong',
+export const databaseConfig = {
+  type: process.env.DB_TYPE,
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  username: process.env.DB_USERNAME,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   entities: [join(__dirname, '/../**/**.entity{.ts,.js}')],
   synchronize: true,
-};
+}
