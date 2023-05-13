@@ -1,20 +1,20 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty} from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger'
+import { Exclude } from 'class-transformer'
+import { IsNotEmpty } from 'class-validator'
 export class UpdateCategoryDto {
   @ApiProperty({ example: '1' })
   @IsNotEmpty()
-  id: number;
+  id: number
   @ApiProperty({ example: 'Tranh giay' })
   @IsNotEmpty()
-  name: string;
+  name: string
   @ApiProperty({ example: '/tranh-giay' })
   @IsNotEmpty()
-  link: string;
+  link: string
   @ApiProperty({ example: '1', default: '' })
-  @IsNotEmpty()
-  parent: string;
+  parent: string
   @ApiProperty({ example: 'tranh giấy' })
-  description: string;
+  description: string
   @ApiProperty()
-  otherLanguage: Object;
+  otherLanguage: Object
 }

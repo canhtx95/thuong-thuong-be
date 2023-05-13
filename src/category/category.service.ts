@@ -30,6 +30,15 @@ export class CategoryService extends CommonService {
   async getAllCategories (dto: getCategoryDto): Promise<BaseResponse> {
     try {
       let data = await this.customCategoryRepository.findAll()
+      data = data.filter(element => {
+        const name = this.getNameMultiLanguage(
+          dto.language,
+          element.otherLanguage,
+        )
+        element.name = name ? name : element.name
+        delete element.otherLanguage
+        return element.isActive == true
+      })
       data.sort((a, b) => {
         if (!a.parent) {
           a.parent = ''
@@ -41,12 +50,17 @@ export class CategoryService extends CommonService {
         const level2 = b.parent.split('/').length
         return level1 - level2
       })
-      this.arrangeCategory(data, dto.language)
-      for (const e of data) {
-        const name = this.getNameMultiLanguage(dto.language, e.otherLanguage)
-        e.name = name ? name : e.name
-        delete e.otherLanguage
-      }
+      this.arrangeCategory(data)
+      return new BaseResponse('Danh sách danh mục sản phẩm', data, 200)
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }
+  }
+
+  async getAllCategoriesByAdmin (): Promise<BaseResponse> {
+    try {
+      let data = await this.customCategoryRepository.findAll()
+      this.arrangeCategory(data)
       return new BaseResponse('Danh sách danh mục sản phẩm', data, 200)
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
@@ -71,14 +85,14 @@ export class CategoryService extends CommonService {
       const categoryRepositoryTransaction =
         queryRunner.manager.getRepository(CategoryEntity)
       dto.link = dto.link.startsWith('/') ? dto.link : `/${dto.link}`
+      dto.parent = dto.parent.split('/').pop()
       const subCategories: CategoryEntity[] = []
       await this.handleUpdateCategoryDto(
         dto,
         categoryRepositoryTransaction,
         subCategories,
       )
-      let category = new CategoryEntity()
-      category = plainToClass(CategoryEntity, dto)
+      const category = plainToClass(CategoryEntity, dto)
       const categorySaved = await categoryRepositoryTransaction.save(category)
       // throw new Error("aaaasd")
       await categoryRepositoryTransaction.save(subCategories)
@@ -102,26 +116,23 @@ export class CategoryService extends CommonService {
     try {
       const categoryRepositoryTransaction =
         queryRunner.manager.getRepository(CategoryEntity)
-      if (dto.isHighlight) {
-        const category = await this.categoryRepository.findOneBy({ id: dto.id })
-        category.isHighlight = dto.isHighlight
-        const categorySaved = await categoryRepositoryTransaction.save(category)
-      }
-      if (dto.isActive || dto.softDeleted) {
+      const category = plainToClass(CategoryEntity, dto)
+      const categorySaved = await categoryRepositoryTransaction.save(category)
+
+      //cập nhật các categories con
+      if (dto.isActive != null || dto.softDeleted != null) {
         const subCategories =
           await this.customCategoryRepository.findSubCategoryById(dto.id)
         for (let sub of subCategories) {
-          if (dto.isActive) sub.isActive = dto.isActive
-          if (dto.softDeleted) sub.softDeleted = dto.softDeleted
+          if (dto.isActive != null) sub.isActive = dto.isActive
+          if (dto.softDeleted != null) sub.softDeleted = dto.softDeleted
         }
-        const categorySaved = await categoryRepositoryTransaction.save(
-          subCategories,
-        )
+        await categoryRepositoryTransaction.save(subCategories)
       }
       await this.managerTransaction.commit()
       const response = new BaseResponse(
         'Cập nhật danh mục sản phẩm thành công',
-        dto,
+        categorySaved,
       )
       return response
     } catch (error) {
@@ -154,34 +165,34 @@ export class CategoryService extends CommonService {
     }
   }
 
-  async getCategoryWithProduct (dto: getCategoryDto): Promise<any> {
-    let data: CategoryEntity[]
-    if (dto.id) {
-      data = await this.categoryRepository.find({
-        where: { id: dto.id },
-      })
-    } else {
-      data = await this.categoryRepository
-        .createQueryBuilder('cate')
-        .leftJoinAndSelect('cate.products', 'product')
-        .select([
-          'cate.id',
-          'cate.name',
-          'cate.link',
-          'cate.isHighlight',
-          'product.id',
-          'product.name',
-          'product.link',
-        ])
-        .where(`cate.id=:id OR cate.link=:link`, {
-          id: dto.id,
-          link: dto.link,
-        })
-        .getMany()
-    }
+  // async getCategoryWithProduct (dto: getCategoryDto): Promise<any> {
+  //   let data: CategoryEntity[]
+  //   if (dto.id) {
+  //     data = await this.categoryRepository.find({
+  //       where: { id: dto.id },
+  //     })
+  //   } else {
+  //     data = await this.categoryRepository
+  //       .createQueryBuilder('cate')
+  //       .leftJoinAndSelect('cate.products', 'product')
+  //       .select([
+  //         'cate.id',
+  //         'cate.name',
+  //         'cate.link',
+  //         'cate.isHighlight',
+  //         'product.id',
+  //         'product.name',
+  //         'product.link',
+  //       ])
+  //       .where(`cate.id=:id OR cate.link=:link`, {
+  //         id: dto.id,
+  //         link: dto.link,
+  //       })
+  //       .getMany()
+  //   }
 
-    return data
-  }
+  //   return data
+  // }
 
   async validateCreateCategoryDto (
     dto: CreateCategoryDto,
@@ -202,45 +213,43 @@ export class CategoryService extends CommonService {
     repository: Repository<CategoryEntity>,
     subCategories: CategoryEntity[],
   ): Promise<any> {
-    // const repository = await entityManager.getRepository(CategoryEntity);
     const checkCategoryName = await repository.findOneBy({ name: dto.name })
     if (checkCategoryName && checkCategoryName.id != dto.id) {
       throw new BadRequestException('Tên danh mục sản phẩm đã tồn tại')
     }
-    const parentCategory = await repository.findOneBy({
-      id: parseInt(dto.parent),
-    })
-    if (!parentCategory) {
-      throw new BadRequestException('Danh mục cha không tồn tại')
-    }
-    const parentIdOfCategoryToUpdate = dto.parent
-    const parentIdOfParentCategory = parentCategory.parent
-    const parentTreeOfCategory = `${parentIdOfParentCategory}/${parentIdOfCategoryToUpdate}`
-    dto.parent = parentTreeOfCategory
     const checkCategoryLink = await repository.findOneBy({ link: dto.link })
     if (checkCategoryLink && checkCategoryLink.id != dto.id) {
       throw new BadRequestException('Đường dẫn danh mục sản phẩm đã tồn tại')
     }
-    // kiểm tra trường hợp category nhận chính cấp dưới của nó làm cha
     const getSubCategories =
       await this.customCategoryRepository.findSubCategoryById(dto.id)
     subCategories.push.apply(subCategories, getSubCategories)
-    const subId = subCategories.map(e => e.id)
-    if (subId.some(id => id == parseInt(dto.parent))) {
-      throw new Error('Danh mục cha không hợp lệ: Danh mục này là cấp dưới')
+    if (dto.parent != ''.trim()) {
+      const parentCategory = await repository.findOneBy({
+        id: parseInt(dto.parent),
+      })
+      if (!parentCategory) {
+        throw new BadRequestException('Danh mục cha không tồn tại')
+      }
+      // kiểm tra trường hợp category nhận chính cấp dưới của nó làm cha
+      const subId = subCategories.map(e => e.id)
+      if (subId.some(id => id == parseInt(dto.parent))) {
+        throw new Error('Danh mục cha không hợp lệ: Danh mục này là cấp dưới')
+      }
+      // parent tree
+      const parentTreeOfCategory = `${parentCategory.parent}/${dto.parent}`
+      dto.parent = parentTreeOfCategory
     }
-    // cập nhật lại parent tree cho các category con
+    // cập nhật lại parent tree cho các con
     subCategories.forEach(sub => {
-      const parent = `${parentTreeOfCategory}/${dto.id}`
-      sub.parent = parent
+      const parent = sub.parent.split('/')
+      const index = parent.findIndex(n => n == dto.id.toString())
+      sub.parent = dto.parent + '/' + parent.slice(index).join('/')
     })
   }
 
-  async arrangeCategory (categories: CategoryEntity[], language: string) {
+  async arrangeCategory (categories: CategoryEntity[]) {
     const element = categories[categories.length - 1]
-    const name = this.getNameMultiLanguage(language, element.otherLanguage)
-    element.name = name ? name : element.name
-    delete element.otherLanguage
     if (element.parent.trim() == '') {
       return
     }
@@ -252,6 +261,6 @@ export class CategoryService extends CommonService {
       }
     }
     categories.pop()
-    this.arrangeCategory(categories, language)
+    this.arrangeCategory(categories)
   }
 }

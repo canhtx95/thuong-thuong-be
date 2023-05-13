@@ -19,6 +19,7 @@ import { CustomProductRepository } from './product.repository'
 import { UpdateStatusDto } from 'src/common/dto/update-status.dto'
 import { CategoryEntity } from 'src/category/entity/category.entity'
 import { CommonService } from 'src/common/service/service.common'
+import { language } from 'src/common/constant'
 
 @Injectable()
 export class ProductService extends CommonService {
@@ -36,16 +37,46 @@ export class ProductService extends CommonService {
   async getProductDetail (dto: GetProductDetailDto): Promise<BaseResponse> {
     try {
       const products = await this.customProductRepository.getProductDetail(dto)
-      const name = this.getNameMultiLanguage(
+      if (
+        !products ||
+        products.isActive == false ||
+        products.category.isActive == false
+      ) {
+        throw new BadRequestException('Sản phảm này không tồn tại')
+      }
+
+      const categoryName = this.getNameMultiLanguage(
+        dto.language,
+        products.category.otherLanguage,
+      )
+      products.category.name = categoryName ? categoryName : products.name
+      delete products.category.otherLanguage
+
+      const productName = this.getNameMultiLanguage(
         dto.language,
         products.otherLanguage,
       )
-      products.name = name ? name : products.name
+      products.name = productName ? productName : products.name
       products.content = this.getContentMultiLanguage(
         dto.language,
         products.content,
       )
       delete products.otherLanguage
+      const response = new BaseResponse('Thành công', products)
+      return response
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }
+  }
+
+  async adminGetProductDetail (dto: GetProductDetailDto): Promise<BaseResponse> {
+    try {
+      dto.language = language.VIETNAMESE
+      const products = await this.customProductRepository.getProductDetail(dto)
+      if (!products) {
+        throw new BadRequestException('Sản phảm này không tồn tại')
+      }
+
       const response = new BaseResponse('Thành công', products)
       return response
     } catch (error) {
@@ -67,10 +98,36 @@ export class ProductService extends CommonService {
       const category = await this.customProductRepository.getProductsByCategory(
         dto,
       )
-      for (const p of category.products) {
+      if (!category || category.isActive == false) {
+        throw new BadRequestException('Danh mục này không tồn tại')
+      }
+      const categoryName = this.getNameMultiLanguage(
+        dto.language,
+        category.otherLanguage,
+      )
+      category.name = categoryName ? categoryName : category.name
+      delete category.otherLanguage
+
+      category.products = category.products.filter(p => {
         const name = this.getNameMultiLanguage(dto.language, p.otherLanguage)
         p.name = name ? name : p.name
         delete p.otherLanguage
+        return p.isActive == true
+      })
+      const response = new BaseResponse('Thành công', category)
+      return response
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }
+  }
+
+  async adminGetProductsByCategory (dto: GetProductsDto): Promise<BaseResponse> {
+    try {
+      const category = await this.customProductRepository.getProductsByCategory(
+        dto,
+      )
+      if (!category) {
+        throw new BadRequestException('Danh mục này không tồn tại')
       }
       const response = new BaseResponse('Thành công', category)
       return response

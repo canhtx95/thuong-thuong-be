@@ -22,17 +22,26 @@ export class CustomProductRepository {
   async getProductsByCategory (dto: GetProductsDto): Promise<any> {
     const products = await this.categoryRepository
       .createQueryBuilder('cate')
-      .leftJoinAndSelect('cate.products', 'product')
+      .leftJoinAndSelect(
+        'cate.products',
+        'product',
+        'product.softDeleted = false',
+      )
       .select([
         'cate.id',
         'cate.name',
         'cate.link',
+        'cate.otherLanguage',
+        'cate.isActive',
         'product.id',
         'product.name',
         'product.link',
         'product.otherLanguage',
+        'product.description',
+        'product.isActive',
       ])
-      .where(`cate.id=:categoryId OR cate.link=:categoryLink`, {
+      .where('cate.softDeleted = false')
+      .andWhere(`cate.id=:categoryId OR cate.link=:categoryLink`, {
         categoryId: dto.categoryId,
         categoryLink: dto.categoryLink,
       })
@@ -42,19 +51,24 @@ export class CustomProductRepository {
   async getProductDetail (dto: GetProductDetailDto): Promise<any> {
     let product = await this.productRepository
       .createQueryBuilder('product')
-      .innerJoinAndSelect('product.category', 'category')
-      .leftJoinAndSelect('product.content', 'content')
-      .andWhere('product.link =:link OR product.id =:id', {
+      .innerJoinAndSelect(
+        'product.category',
+        'category',
+        'category.softDeleted = false',
+      )
+      .leftJoinAndSelect(
+        'product.content',
+        'content',
+        'content.language =:language',
+        { language: dto.language },
+      )
+      .where('product.softDeleted = false')
+      .andWhere('(product.link =:link OR product.id =:id)', {
         link: dto.productLink,
         id: dto.productId,
       })
-      .andWhere('content.language =:language', { language: dto.language })
       .getOne()
-    if (product) {
-      product.category.softDeleted == true || product.softDeleted == true
-        ? null
-        : product
-    }
+
     return product
   }
 }

@@ -8,13 +8,14 @@ import {
   OneToOne,
 } from 'typeorm'
 import { ArticleEntity } from './article.entity'
+import { language } from 'src/common/constant'
 
 @Entity({ name: 'article_content' })
 export class ArticleContentEntity {
   @PrimaryGeneratedColumn()
   @Index({ unique: true })
   id: number
-  @Column({ default: 'VI' })
+  @Column({ default: language.VIETNAMESE })
   language: string
   @Column({ type: 'text' })
   content: string

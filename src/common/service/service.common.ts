@@ -1,3 +1,4 @@
+
 export class CommonService {
     getNameMultiLanguage(language: string, data: string) {
         if (language == 'VI' || language == null || data == null) {

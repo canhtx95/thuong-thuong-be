@@ -8,6 +8,7 @@ import {
   UseInterceptors,
   Delete,
   Param,
+  Req,
 } from '@nestjs/common'
 
 import { BaseResponse } from 'src/common/response/base.response'
@@ -34,11 +35,19 @@ export class ProductController {
     return this.productService.addProducts(dto)
   }
 
-  @ApiOperation({ summary: 'get products by id, link, categoryId' })
+  @ApiOperation({ summary: 'Lấy danh sách sản phẩm theo category' })
   @PublicEndpoint()
   @Post('')
   async getProducts (@Body() dto: GetProductsDto): Promise<BaseResponse> {
     return this.productService.getProductsByCategory(dto)
+  }
+
+  @ApiOperation({
+    summary: 'Lấy danh sách sản phẩm theo category - quyền admin',
+  })
+  @Post('admin-get-products')
+  async adminGetProducts (@Body() dto: GetProductsDto): Promise<BaseResponse> {
+    return this.productService.adminGetProductsByCategory(dto)
   }
 
   @ApiOperation({ summary: 'Xem chi tiết' })
@@ -48,6 +57,14 @@ export class ProductController {
     @Body() dto: GetProductDetailDto,
   ): Promise<BaseResponse> {
     return this.productService.getProductDetail(dto)
+  }
+
+  @ApiOperation({ summary: 'Xem chi tiết' })
+  @Post('admin-get-detail')
+  async adminGetProductDetail (
+    @Body() dto: GetProductDetailDto,
+  ): Promise<BaseResponse> {
+    return this.productService.adminGetProductDetail(dto)
   }
 
   @ApiOperation({ summary: 'Cập nhật sản phẩm' })

@@ -1,3 +1,4 @@
+import { ROLE } from 'src/common/constant'
 import {
   Entity,
   Column,
@@ -5,18 +6,20 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-} from 'typeorm';
+} from 'typeorm'
 @Entity({ name: 'users' })
 export class UserEntity {
   @PrimaryGeneratedColumn('uuid')
   @Index({ unique: true })
-  uuid: string;
+  uuid: string
   @Column({ unique: true })
-  username: string;
+  username: string
   @Column()
-  password: string;
+  password: string
+  @Column({ default: ROLE.ADMIN })
+  role: string
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
-  createdAt: Date;
+  createdAt: Date
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
-  updatedAt: Date;
+  updatedAt: Date
 }
