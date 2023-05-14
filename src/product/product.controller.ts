@@ -59,7 +59,7 @@ export class ProductController {
     return this.productService.getProductDetail(dto)
   }
 
-  @ApiOperation({ summary: 'Xem chi tiết' })
+  @ApiOperation({ summary: 'Xem chi tiết - quyền admin' })
   @Post('admin-get-detail')
   async adminGetProductDetail (
     @Body() dto: GetProductDetailDto,

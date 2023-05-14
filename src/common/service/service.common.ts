@@ -12,7 +12,7 @@ export class CommonService {
         for (const obj of data) {
             const map = new Map(Object.entries(obj));
             if (map.get('language') == language) {
-                return [obj]
+                return obj.content
             }
         }
         return null

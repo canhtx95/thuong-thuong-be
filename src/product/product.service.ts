@@ -20,6 +20,7 @@ import { UpdateStatusDto } from 'src/common/dto/update-status.dto'
 import { CategoryEntity } from 'src/category/entity/category.entity'
 import { CommonService } from 'src/common/service/service.common'
 import { language } from 'src/common/constant'
+import { CustomCategoryRepository } from 'src/category/category.repository'
 
 @Injectable()
 export class ProductService extends CommonService {
@@ -30,6 +31,7 @@ export class ProductService extends CommonService {
     private readonly categoryRepository: Repository<CategoryEntity>,
     private readonly customProductRepository: CustomProductRepository,
     private readonly managerTransaction: DatabaseTransactionManagerService,
+    private readonly customCategoryRep: CustomCategoryRepository,
   ) {
     super()
   }
@@ -37,11 +39,8 @@ export class ProductService extends CommonService {
   async getProductDetail (dto: GetProductDetailDto): Promise<BaseResponse> {
     try {
       const products = await this.customProductRepository.getProductDetail(dto)
-      if (
-        !products ||
-        products.isActive == false ||
-        products.category.isActive == false
-      ) {
+
+      if (!products) {
         throw new BadRequestException('Sản phảm này không tồn tại')
       }
 
@@ -57,12 +56,15 @@ export class ProductService extends CommonService {
         products.otherLanguage,
       )
       products.name = productName ? productName : products.name
-      products.content = this.getContentMultiLanguage(
+      const content = this.getContentMultiLanguage(
         dto.language,
         products.content,
       )
       delete products.otherLanguage
-      const response = new BaseResponse('Thành công', products)
+      const response = new BaseResponse('Thành công', {
+        ...products,
+        content,
+      })
       return response
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
@@ -72,7 +74,9 @@ export class ProductService extends CommonService {
   async adminGetProductDetail (dto: GetProductDetailDto): Promise<BaseResponse> {
     try {
       dto.language = language.VIETNAMESE
-      const products = await this.customProductRepository.getProductDetail(dto)
+      const products = await this.customProductRepository.adminGetProductDetail(
+        dto,
+      )
       if (!products) {
         throw new BadRequestException('Sản phảm này không tồn tại')
       }
@@ -83,21 +87,25 @@ export class ProductService extends CommonService {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
   }
-  async getProducts (dto: GetProductsDto): Promise<BaseResponse> {
-    try {
-      const products = await this.productRepository.find()
 
-      const response = new BaseResponse('Thành công', products)
-      return response
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
-    }
-  }
   async getProductsByCategory (dto: GetProductsDto): Promise<BaseResponse> {
+    // thiếu: phải get ra tất cả các product thuộc về subCate
+    // kiểm tra cha của category có hoạt động hay không
     try {
-      const category = await this.customProductRepository.getProductsByCategory(
-        dto,
+      const category = await this.customCategoryRep.findCategoryByIdOrLink(
+        dto.categoryId,
+        dto.categoryLink,
       )
+      const subCate = await this.customCategoryRep.findSubCategoryById(
+        category.id,
+      )
+      const subCateId = subCate.map(e => e.id)
+      subCateId.push(category.id)
+      const products = await this.customProductRepository.getProductsByCategory(
+        subCateId,
+      )
+      category.products = products
+
       if (!category || category.isActive == false) {
         throw new BadRequestException('Danh mục này không tồn tại')
       }
@@ -107,6 +115,9 @@ export class ProductService extends CommonService {
       )
       category.name = categoryName ? categoryName : category.name
       delete category.otherLanguage
+      delete category.isActive
+      delete category.parent
+      delete category.isHighlight
 
       category.products = category.products.filter(p => {
         const name = this.getNameMultiLanguage(dto.language, p.otherLanguage)
@@ -123,19 +134,26 @@ export class ProductService extends CommonService {
 
   async adminGetProductsByCategory (dto: GetProductsDto): Promise<BaseResponse> {
     try {
-      const category = await this.customProductRepository.getProductsByCategory(
-        dto,
+      const category = await this.customCategoryRep.findCategoryByIdOrLink(
+        dto.categoryId,
+        dto.categoryLink,
       )
-      if (!category) {
-        throw new BadRequestException('Danh mục này không tồn tại')
-      }
+      const subCate = await this.customCategoryRep.findSubCategoryById(
+        category.id,
+      )
+      const subCateId = subCate.map(e => e.id)
+      subCateId.push(category.id)
+      const products = await this.customProductRepository.getProductsByCategory(
+        subCateId,
+      )
+      category.products = products
+
       const response = new BaseResponse('Thành công', category)
       return response
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
   }
-
   async addProducts (dto: CreateProductDto): Promise<BaseResponse> {
     const queryRunner = await this.managerTransaction.createTransaction()
     try {
@@ -175,11 +193,7 @@ export class ProductService extends CommonService {
       }
       let product = new ProductEntity()
       product = plainToClass(ProductEntity, dto)
-      const content = product.content
       const productSaved = await categoryRepositoryTransaction.save(product)
-      const productContentRepository =
-        queryRunner.manager.getRepository(ProductContentEntity)
-      productContentRepository.save(content)
       await this.managerTransaction.commit()
       const response = new BaseResponse(
         'Cập nhật sản phẩm thành công',
@@ -195,11 +209,26 @@ export class ProductService extends CommonService {
   async updateProductStatus (dto: UpdateStatusDto): Promise<BaseResponse> {
     const queryRunner = await this.managerTransaction.createTransaction()
     try {
-      const categoryRepositoryTransaction =
+      const productRepositoryTransaction =
         queryRunner.manager.getRepository(ProductEntity)
-      let product = new ProductEntity()
-      product = plainToClass(ProductEntity, dto)
-      const productSaved = await categoryRepositoryTransaction.save(product)
+      // Kiểm tra category của product có đang bị ẩn hay không
+      // Product chỉ bật hiển thì khi category của nó đang đc hiển thị
+      if (dto.isActive == true) {
+        const getProductDto = new GetProductDetailDto()
+        getProductDto.productId = dto.id
+        let isProductExisting =
+          await this.customProductRepository.adminGetProductDetail(
+            getProductDto,
+          )
+        if (!isProductExisting) {
+          throw new Error('Sản phẩm không tồn tại')
+        }
+        if (isProductExisting.category.isActive == false) {
+          throw new Error('Thất bại: Danh mục của sản phẩm này đang bị Ẩn')
+        }
+      }
+      let product = plainToClass(ProductEntity, dto)
+      const productSaved = await productRepositoryTransaction.save(product)
       await this.managerTransaction.commit()
       const response = new BaseResponse(
         'Cập nhật trạng thái sản phẩm thành công',

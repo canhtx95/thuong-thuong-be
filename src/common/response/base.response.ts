@@ -1,14 +1,11 @@
 export class BaseResponse {
-  statusCode: number;
-  message: string;
-  data: any;
-
-  constructor(msg?: string, data?: any, statusCode?: number) {
-    this.message = msg;
-    this.data = data;
-    this.statusCode = statusCode;
-    if (!statusCode) {
-      this.statusCode = 200;
+  data: any
+  meta: any
+  constructor (msg?: string, data?: any, status?: number) {
+    this.data = data
+    if (!status) {
+      status = 200
     }
+    this.meta = { message: msg, status: status }
   }
 }

@@ -19,20 +19,15 @@ export class CustomProductRepository {
     private dataSource: DataSource,
   ) {}
 
-  async getProductsByCategory (dto: GetProductsDto): Promise<any> {
-    const products = await this.categoryRepository
-      .createQueryBuilder('cate')
-      .leftJoinAndSelect(
-        'cate.products',
-        'product',
-        'product.softDeleted = false',
+  async getProductsByCategory (id: any[]): Promise<ProductEntity[]> {
+    const products = await this.productRepository
+      .createQueryBuilder('product')
+      .innerJoin(
+        'product.category',
+        'cate',
+        'cate.softDeleted = false AND cate.id IN (:categoryId)',{categoryId: id,}
       )
       .select([
-        'cate.id',
-        'cate.name',
-        'cate.link',
-        'cate.otherLanguage',
-        'cate.isActive',
         'product.id',
         'product.name',
         'product.link',
@@ -40,12 +35,7 @@ export class CustomProductRepository {
         'product.description',
         'product.isActive',
       ])
-      .where('cate.softDeleted = false')
-      .andWhere(`cate.id=:categoryId OR cate.link=:categoryLink`, {
-        categoryId: dto.categoryId,
-        categoryLink: dto.categoryLink,
-      })
-      .getOne()
+      .getMany()
     return products
   }
   async getProductDetail (dto: GetProductDetailDto): Promise<any> {
@@ -54,7 +44,7 @@ export class CustomProductRepository {
       .innerJoinAndSelect(
         'product.category',
         'category',
-        'category.softDeleted = false',
+        'category.softDeleted = false AND category.isActive = true',
       )
       .leftJoinAndSelect(
         'product.content',
@@ -62,6 +52,39 @@ export class CustomProductRepository {
         'content.language =:language',
         { language: dto.language },
       )
+      .select([
+        'product.id',
+        'product.name',
+        'product.link',
+        'product.imgLink',
+        'product.description',
+        'product.otherLanguage',
+        'product.name',
+        'category.id',
+        'category.name',
+        'category.link',
+        'category.parent',
+        'content',
+      ])
+
+      .where('product.softDeleted = false AND product.isActive = true')
+      .andWhere('(product.link =:link OR product.id =:id)', {
+        link: dto.productLink,
+        id: dto.productId,
+      })
+      .getOne()
+
+    return product
+  }
+  async adminGetProductDetail (dto: GetProductDetailDto): Promise<any> {
+    let product = await this.productRepository
+      .createQueryBuilder('product')
+      .innerJoinAndSelect(
+        'product.category',
+        'category',
+        'category.softDeleted = false',
+      )
+      .leftJoinAndSelect('product.content', 'content')
       .where('product.softDeleted = false')
       .andWhere('(product.link =:link OR product.id =:id)', {
         link: dto.productLink,

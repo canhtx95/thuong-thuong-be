@@ -28,7 +28,7 @@ export class MenuService {
     async getMenuById(id: number): Promise<BaseResponse> {
         try {
             const menu = await this.menuRepository.findOneBy({ id: id });
-            return new BaseResponse('Chi tiết danh mục', menu, 200);
+            return new BaseResponse('Chi tiết Menu', menu, 200);
         } catch (error) {
             throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
         }
@@ -37,22 +37,46 @@ export class MenuService {
 
     async getAllMenu(): Promise<BaseResponse> {
         try {
-            const subMenus = await this.menuRepository.createQueryBuilder('menu')
-                .leftJoinAndSelect('menu.subMenu', 'sub_lev1', 'sub_lev1.softDeleted = false')
-                .leftJoinAndSelect('sub_lev1.subMenu', 'sub_lev2', 'sub_lev2.softDeleted = false')
-                .leftJoinAndSelect('sub_lev2.subMenu', 'sub_lev3', 'sub_lev3.softDeleted = false')
-                .leftJoinAndSelect('sub_lev3.subMenu', 'sub_lev4', 'sub_lev4.softDeleted = false')
-                .where('menu.softDeleted = false')
-
+            const menu = await this.menuRepository.createQueryBuilder('menu')
+                .leftJoinAndSelect('menu.subMenu', 'sub_lev1', 'sub_lev1.softDeleted = false AND sub_lev1.isActive = true')
+                .leftJoinAndSelect('sub_lev1.subMenu', 'sub_lev2', 'sub_lev2.softDeleted = false AND sub_lev2.isActive = true')
+                .leftJoinAndSelect('sub_lev2.subMenu', 'sub_lev3', 'sub_lev3.softDeleted = false AND sub_lev3.isActive = true')
+                .leftJoinAndSelect('sub_lev3.subMenu', 'sub_lev4', 'sub_lev4.softDeleted = false AND sub_lev4.isActive = true')
+                .select(['menu.id','menu.name','menu.link','menu.createdAt','menu.updatedAt','menu.parentId'])
+                .addSelect(['sub_lev1.id','sub_lev1.name','sub_lev1.link','sub_lev1.createdAt','sub_lev1.updatedAt','sub_lev1.parentId'])
+                .addSelect(['sub_lev2.id','sub_lev2.name','sub_lev2.link','sub_lev2.createdAt','sub_lev2.updatedAt','sub_lev2.parentId'])
+                .addSelect(['sub_lev3.id','sub_lev3.name','sub_lev3.link','sub_lev3.createdAt','sub_lev3.updatedAt','sub_lev3.parentId'])
+                .addSelect(['sub_lev4.id','sub_lev4.name','sub_lev4.link','sub_lev4.createdAt','sub_lev4.updatedAt','sub_lev4.parentId'])
+                .where('menu.softDeleted = false AND menu.isActive = true')
+                .orderBy('menu.priority')
+                .addOrderBy('menu.id')
                 .getMany();
-            const result = subMenus.filter(e => !e.parentId)
-            return new BaseResponse('Danh mục', result, 200);
+            const result = menu.filter(e => !e.parentId)
+            return new BaseResponse('Menu', result, 200);
         } catch (error) {
             throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
         }
 
     }
 
+    async adminGetAllMenu(): Promise<BaseResponse> {
+        try {
+            const subMenus = await this.menuRepository.createQueryBuilder('menu')
+                .leftJoinAndSelect('menu.subMenu', 'sub_lev1', 'sub_lev1.softDeleted = false')
+                .leftJoinAndSelect('sub_lev1.subMenu', 'sub_lev2', 'sub_lev2.softDeleted = false')
+                .leftJoinAndSelect('sub_lev2.subMenu', 'sub_lev3', 'sub_lev3.softDeleted = false')
+                .leftJoinAndSelect('sub_lev3.subMenu', 'sub_lev4', 'sub_lev4.softDeleted = false')
+                .where('menu.softDeleted = false')
+                .orderBy('menu.priority')
+                .addOrderBy('menu.id')
+                .getMany();
+            const result = subMenus.filter(e => !e.parentId)
+            return new BaseResponse('Menu', result, 200);
+        } catch (error) {
+            throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+        }
+
+    }
     async updateMenu(dto: UpdateMenuDto): Promise<BaseResponse> {
         const queryRunner = await this.managerTransaction.createTransaction();
         try {
@@ -64,7 +88,7 @@ export class MenuService {
             const result = await menuRepositoryTransaction.save(menu)
             await this.managerTransaction.commit();
             const response = new BaseResponse(
-                'Cập nhật danh mục thành công',
+                'Cập nhật Menu thành công',
                 result,
             );
             return response;
@@ -83,7 +107,7 @@ export class MenuService {
             const result = await menuRepositoryTransaction.save(menu)
             await this.managerTransaction.commit();
             const response = new BaseResponse(
-                'Cập nhật danh mục thành công',
+                'Cập nhật Menu thành công',
                 result,
             );
             return response;
@@ -104,7 +128,7 @@ export class MenuService {
             const result = await menuRepositoryTransaction.save(menu)
             await this.managerTransaction.commit();
             const response = new BaseResponse(
-                'Tạo danh mục thành công',
+                'Tạo Menu thành công',
                 result,
             );
             return response;
@@ -117,16 +141,19 @@ export class MenuService {
     async validateUpdateMenu(dto: UpdateMenuDto) {
         const checkName = await this.menuRepository.findOneBy({ name: dto.name });
         if (checkName && checkName.id != dto.id) {
-            throw new BadRequestException('Tên danh mục sản phẩm đã tồn tại');
+            throw new BadRequestException('Tên Menu sản phẩm đã tồn tại');
         }
         const checkLink = await this.menuRepository.findOneBy({ link: dto.link });
         if (checkLink && checkLink.id != dto.id) {
-            throw new BadRequestException('Đường dẫn danh mục sản phẩm đã tồn tại');
+            throw new BadRequestException('Đường dẫn Menu sản phẩm đã tồn tại');
         }
         if (dto.parentId) {
             const checkParent = await this.menuRepository.findOneBy({ parentId: dto.parentId });
+            // const checkParent = await this.menuRepository.createQueryBuilder('menu')
+            // .innerJoinAndSelect('menu.')
+
             if (!checkParent) {
-                throw new BadRequestException('Danh mục cha không tồn tại');
+                throw new BadRequestException('Menu cha không tồn tại');
             }
         }
 
@@ -135,16 +162,16 @@ export class MenuService {
     async validateCreateMenu(dto: CreateMenuDto) {
         const checkName = await this.menuRepository.findOneBy({ name: dto.name });
         if (checkName) {
-            throw new BadRequestException('Tên danh mục đã tồn tại');
+            throw new BadRequestException('Tên Menu đã tồn tại');
         }
         const checkLink = await this.menuRepository.findOneBy({ link: dto.link });
         if (checkLink) {
-            throw new BadRequestException('Đường dẫn danh mục đã tồn tại');
+            throw new BadRequestException('Đường dẫn Menu đã tồn tại');
         }
         if (dto.parentId) {
             const checkParent = await this.menuRepository.findOneBy({ parentId: dto.parentId });
             if (!checkParent) {
-                throw new BadRequestException('Danh mục cha không tồn tại');
+                throw new BadRequestException('Menu cha không tồn tại');
             }
         }
 

@@ -29,14 +29,21 @@ export class ArticleController {
   //   return this.articleService.getArticleByIdOrLink(dto);
   // }
 
-  @ApiOperation({ summary: 'lấy bài viết bằng link hoặc id' })
+  @ApiOperation({ summary: 'Xem chi tiết bài viết bằng link hoặc id' })
   @PublicEndpoint()
   @Post('')
   getArticleByIdOrLink (@Body() dto: getArticleDto): Promise<BaseResponse> {
     return this.articleService.getArticleByIdOrLink(dto)
   }
 
-  @ApiOperation({ summary: 'lấy bài viết bằng link hoặc id của menu' })
+  @ApiOperation({ summary: 'Xem chi tiết bài viết bằng link hoặc id - quyền admin' })
+  @PublicEndpoint()
+  @Post('/admin-get-detail')
+  adminGetArticleByIdOrLink (@Body() dto: getArticleDto): Promise<BaseResponse> {
+    return this.articleService.adminGetArticleByIdOrLink(dto)
+  }
+
+  @ApiOperation({ summary: 'lấy các bài viết bằng link hoặc id của menu' })
   @PublicEndpoint()
   @Post('get-by-menu')
   getArticleByMenuIdOrLink (@Body() dto: getArticleDto): Promise<BaseResponse> {

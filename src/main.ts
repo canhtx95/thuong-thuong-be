@@ -7,7 +7,7 @@ import { join } from 'path'
 async function bootstrap () {
   const app = await NestFactory.create(AppModule)
   app.useGlobalPipes(new ValidationPipe())
-
+  app.enableCors();
   SwaggerFactory.create(app)
   await app.listen(process.env.PORT)
 }

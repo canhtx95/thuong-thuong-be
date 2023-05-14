@@ -9,6 +9,7 @@ export class UpdateArticleDto {
     @ApiProperty({ example: '/tranh-giay' })
     link: string;
     @ApiProperty({ example: '1', default: '' })
+    @IsNotEmpty()
     parent: string;
     @ApiProperty({ example: 'tranh giấy' })
     description: string;

@@ -58,7 +58,7 @@ export class CategoryController {
 
   @ApiOperation({ summary: 'Lấy hết category - quyền admin' })
   @Get('admin-get-all')
-  getCategoryByAdmin (@Req() req: any): Promise<BaseResponse> {
+  getCategoryByAdmin (): Promise<BaseResponse> {
     return this.categoryService.getAllCategoriesByAdmin()
   }
 

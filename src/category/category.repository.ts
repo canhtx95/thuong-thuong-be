@@ -29,7 +29,7 @@ export class CustomCategoryRepository {
   async findCategoryByIdOrLink (
     id: number,
     link: string,
-  ): Promise<CategoryEntity[]> {
+  ): Promise<CategoryEntity> {
     const data = await this.categoryRepository
       .createQueryBuilder('cate')
       .select([
@@ -49,7 +49,7 @@ export class CustomCategoryRepository {
         link: link,
       })
       .orderBy('cate.id')
-      .getMany()
+      .getOne()
     return data
   }
 
@@ -72,30 +72,4 @@ export class CustomCategoryRepository {
     return data
   }
 
-  // async findProductOfCategoryByIdOrLink (
-  //   id: number,
-  //   link: string,
-  // ): Promise<CategoryEntity[]> {
-  //   const data = await this.categoryRepository
-  //     .createQueryBuilder('cate')
-  //     .select([
-  //       'cate.id',
-  //       'cate.name',
-  //       'cate.link',
-  //       'cate.isHighlight',
-  //       'cate.isActive',
-  //       'cate.otherLanguage',
-  //       'cate.parent',
-  //     ])
-  //     .where(`cate.softDeleted = :sd`, {
-  //       sd: false,
-  //     })
-  //     .andWhere(`cate.parent like '%/:id%' OR cate.link=:link`, {
-  //       id: id,
-  //       link: link,
-  //     })
-  //     .orderBy('cate.id')
-  //     .getMany()
-  //   return data
-  // }
 }

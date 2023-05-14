@@ -7,12 +7,14 @@ import { DatabaseTransactionManagerService } from 'src/common/database-transacti
 import { CustomProductRepository } from './product.repository';
 import { CategoryEntity } from 'src/category/entity/category.entity';
 import { ProductContentEntity } from './entity/product-content.entity';
+import { CustomCategoryRepository } from 'src/category/category.repository';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ProductEntity, CategoryEntity, ProductContentEntity])],
   controllers: [ProductController],
   providers: [ProductService,
     DatabaseTransactionManagerService,
-    CustomProductRepository]
+    CustomProductRepository,
+    CustomCategoryRepository]
 })
 export class ProductModule { }

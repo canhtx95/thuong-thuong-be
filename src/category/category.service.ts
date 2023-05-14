@@ -16,6 +16,7 @@ import { CustomCategoryRepository } from './category.repository'
 import { UpdateCategoryDto } from './dto/update-category.dto'
 import { UpdateCategoryStatusDto } from './dto/update-category-status.dto'
 import { CommonService } from 'src/common/service/service.common'
+import { ROLE } from 'src/common/constant'
 @Injectable()
 export class CategoryService extends CommonService {
   constructor (
@@ -60,7 +61,7 @@ export class CategoryService extends CommonService {
   async getAllCategoriesByAdmin (): Promise<BaseResponse> {
     try {
       let data = await this.customCategoryRepository.findAll()
-      this.arrangeCategory(data)
+      this.arrangeCategory(data, ROLE.ADMIN)
       return new BaseResponse('Danh sách danh mục sản phẩm', data, 200)
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
@@ -116,6 +117,9 @@ export class CategoryService extends CommonService {
     try {
       const categoryRepositoryTransaction =
         queryRunner.manager.getRepository(CategoryEntity)
+      // if (dto.isActive == true) {
+      //   await this.checkStatusParentCategory(dto.id)
+      // }
       const category = plainToClass(CategoryEntity, dto)
       const categorySaved = await categoryRepositoryTransaction.save(category)
 
@@ -164,35 +168,6 @@ export class CategoryService extends CommonService {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
   }
-
-  // async getCategoryWithProduct (dto: getCategoryDto): Promise<any> {
-  //   let data: CategoryEntity[]
-  //   if (dto.id) {
-  //     data = await this.categoryRepository.find({
-  //       where: { id: dto.id },
-  //     })
-  //   } else {
-  //     data = await this.categoryRepository
-  //       .createQueryBuilder('cate')
-  //       .leftJoinAndSelect('cate.products', 'product')
-  //       .select([
-  //         'cate.id',
-  //         'cate.name',
-  //         'cate.link',
-  //         'cate.isHighlight',
-  //         'product.id',
-  //         'product.name',
-  //         'product.link',
-  //       ])
-  //       .where(`cate.id=:id OR cate.link=:link`, {
-  //         id: dto.id,
-  //         link: dto.link,
-  //       })
-  //       .getMany()
-  //   }
-
-  //   return data
-  // }
 
   async validateCreateCategoryDto (
     dto: CreateCategoryDto,
@@ -248,19 +223,30 @@ export class CategoryService extends CommonService {
     })
   }
 
-  async arrangeCategory (categories: CategoryEntity[]) {
+  async arrangeCategory (categories: CategoryEntity[], role?) {
     const element = categories[categories.length - 1]
+    
     if (element.parent.trim() == '') {
+      if (role != ROLE.ADMIN) {
+        delete element.parent
+        delete element.isActive
+        delete element.isHighlight
+      }
       return
     }
     let parentId = parseInt(element.parent.split('/').pop())
     for (let cate of categories) {
       if (parentId == cate.id) {
+        if (role != ROLE.ADMIN) {
+          delete element.parent
+          delete element.isActive
+          delete element.isHighlight
+        }
         cate.subCategories.push(element)
         break
       }
     }
     categories.pop()
-    this.arrangeCategory(categories)
+    this.arrangeCategory(categories, role)
   }
 }

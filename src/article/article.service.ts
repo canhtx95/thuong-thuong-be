@@ -53,19 +53,40 @@ export class ArticleService extends CommonService {
     async getArticleByIdOrLink(dto: getArticleDto): Promise<BaseResponse> {
         try {
             let article = await this.articleRepository.createQueryBuilder('art')
+                .innerJoinAndSelect('art.menu', 'menu','menu.softDeleted = false AND menu.isActive = true')
+                .innerJoinAndSelect('menu.parent', 'parent','parent.softDeleted = false AND parent.isActive = true')
+                .innerJoinAndSelect('parent.parent', 'parent1','parent1.softDeleted = false AND parent1.isActive = true')
                 .leftJoinAndSelect('art.content', 'content')
-                .where('art.softDeleted = false')
+                .where('art.softDeleted = false AND art.isActive = true')
                 .andWhere('(art.id =:id OR art.link =:link)', { id: dto.id, link: dto.link })
                 .getOne()
-            if (article) {
-                article = article.isActive == true ? article : null
-            } else {
+            if (!article) {
                 throw new Error('Bài viết không tồn tại')
             }
             const name = this.getNameMultiLanguage(dto.language, article.otherLanguage);
             article.name = name ? name : article.name
             article.content = this.getContentMultiLanguage(dto.language, article.content);
             delete article.otherLanguage
+            const response = new BaseResponse(
+                'Lấy dữ liệu thành công',
+                article,
+            );
+            return response;
+        } catch (error) {
+            throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    async adminGetArticleByIdOrLink(dto: getArticleDto): Promise<BaseResponse> {
+        try {
+            let article = await this.articleRepository.createQueryBuilder('art')
+                .leftJoinAndSelect('art.content', 'content')
+                .where('art.softDeleted = false')
+                .andWhere('(art.id =:id OR art.link =:link)', { id: dto.id, link: dto.link })
+                .getOne()
+            if (!article) {
+                throw new Error('Bài viết không tồn tại')
+            }
             const response = new BaseResponse(
                 'Lấy dữ liệu thành công',
                 article,
@@ -108,6 +129,8 @@ export class ArticleService extends CommonService {
                 if (checkLink && checkLink.id != dto.id) {
                     throw new Error('Đường dẫn đã tồn tại')
                 }
+                const parent = repository.createQueryBuilder('')
+
                 const article = plainToClass(ArticleEntity, dto)
                 result = await repository.save(article)
                 throw new Error('aasd')
