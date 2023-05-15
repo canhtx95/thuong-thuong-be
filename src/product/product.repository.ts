@@ -25,7 +25,8 @@ export class CustomProductRepository {
       .innerJoin(
         'product.category',
         'cate',
-        'cate.softDeleted = false AND cate.id IN (:categoryId)',{categoryId: id,}
+        'cate.softDeleted = false AND cate.id IN (:categoryId)',
+        { categoryId: id },
       )
       .select([
         'product.id',
@@ -93,5 +94,15 @@ export class CustomProductRepository {
       .getOne()
 
     return product
+  }
+
+  async checkParentCategoriesInActive (id: any[]): Promise<boolean> {
+    const result = await this.categoryRepository
+      .createQueryBuilder('cate')
+      .where('(cate.isActive = false OR cate.softDeleted = true)')
+      .andWhere('cate.id IN (:id)', { id: id })
+      .getMany()
+
+    return result.length > 0 ? true : false
   }
 }

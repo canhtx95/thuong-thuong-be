@@ -78,6 +78,7 @@ export class MenuService {
 
     }
     async updateMenu(dto: UpdateMenuDto): Promise<BaseResponse> {
+        delete dto.parentId
         const queryRunner = await this.managerTransaction.createTransaction();
         try {
             const menuRepositoryTransaction =
@@ -148,13 +149,9 @@ export class MenuService {
             throw new BadRequestException('Đường dẫn Menu sản phẩm đã tồn tại');
         }
         if (dto.parentId) {
-            const checkParent = await this.menuRepository.findOneBy({ parentId: dto.parentId });
-            // const checkParent = await this.menuRepository.createQueryBuilder('menu')
-            // .innerJoinAndSelect('menu.')
-
-            if (!checkParent) {
-                throw new BadRequestException('Menu cha không tồn tại');
-            }
+          if (dto.parentId) {
+            await this.checkMenuLevel(dto.parentId)
+          }
         }
 
     }
@@ -169,11 +166,23 @@ export class MenuService {
             throw new BadRequestException('Đường dẫn Menu đã tồn tại');
         }
         if (dto.parentId) {
-            const checkParent = await this.menuRepository.findOneBy({ parentId: dto.parentId });
-            if (!checkParent) {
-                throw new BadRequestException('Menu cha không tồn tại');
-            }
+          await this.checkMenuLevel(dto.parentId)
         }
 
+    }
+    async checkMenuLevel(id: number){
+      const checkParent = await this.menuRepository.createQueryBuilder('menu')
+      .leftJoinAndSelect('menu.parent','parent1')
+      .leftJoinAndSelect('parent1.parent','parent2','parent2.softDeleted = false')
+      .leftJoinAndSelect('parent2.parent','parent3','parent3.softDeleted = false')
+      .where('menu.softDeleted = false')
+      .andWhere('menu.id =:id', {id: id})
+      .getOne();
+      if (!checkParent) {
+          throw new BadRequestException('Menu cha không tồn tại');
+      }
+      if(checkParent?.parent?.parent?.parent){
+        throw new BadRequestException('Menu cha đã là cấp thấp nhất, hãy chọn menu cha khác');
+      }
     }
 }

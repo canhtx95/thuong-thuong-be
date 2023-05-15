@@ -124,12 +124,11 @@ export class CategoryService extends CommonService {
       const categorySaved = await categoryRepositoryTransaction.save(category)
 
       //cập nhật các categories con
-      if (dto.isActive != null || dto.softDeleted != null) {
+      if (dto.softDeleted != null) {
         const subCategories =
           await this.customCategoryRepository.findSubCategoryById(dto.id)
         for (let sub of subCategories) {
-          if (dto.isActive != null) sub.isActive = dto.isActive
-          if (dto.softDeleted != null) sub.softDeleted = dto.softDeleted
+          sub.softDeleted = dto.softDeleted
         }
         await categoryRepositoryTransaction.save(subCategories)
       }
@@ -225,7 +224,7 @@ export class CategoryService extends CommonService {
 
   async arrangeCategory (categories: CategoryEntity[], role?) {
     const element = categories[categories.length - 1]
-    
+
     if (element.parent.trim() == '') {
       if (role != ROLE.ADMIN) {
         delete element.parent

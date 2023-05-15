@@ -65,11 +65,13 @@ export class CustomCategoryRepository {
         'cate.otherLanguage',
         'cate.parent',
       ])
-      .where(`cate.parent LIKE '%:id%'`, {
-        id: id,
-      })
+      .where(
+        `cate.softDeleted = false AND (cate.parent LIKE '%/:id/%' OR cate.parent LIKE '%/:id%')`,
+        {
+          id: id,
+        },
+      )
       .getMany()
     return data
   }
-
 }

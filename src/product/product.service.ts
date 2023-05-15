@@ -39,8 +39,16 @@ export class ProductService extends CommonService {
   async getProductDetail (dto: GetProductDetailDto): Promise<BaseResponse> {
     try {
       const products = await this.customProductRepository.getProductDetail(dto)
-
+      // Kiểm tra danh mục cha có đang hoạt động hay không
       if (!products) {
+        throw new BadRequestException('Sản phảm này không tồn tại')
+      }
+      const parentId = products?.category?.parent?.split('/')
+      const checkParentInActive =
+        await this.customProductRepository.checkParentCategoriesInActive(
+          parentId,
+        )
+      if (checkParentInActive == true) {
         throw new BadRequestException('Sản phảm này không tồn tại')
       }
 
@@ -89,17 +97,26 @@ export class ProductService extends CommonService {
   }
 
   async getProductsByCategory (dto: GetProductsDto): Promise<BaseResponse> {
-    // thiếu: phải get ra tất cả các product thuộc về subCate
-    // kiểm tra cha của category có hoạt động hay không
     try {
       const category = await this.customCategoryRep.findCategoryByIdOrLink(
         dto.categoryId,
         dto.categoryLink,
       )
+      // Kiểm tra danh mục cha có đang hoạt động hay không
+      const parentId = category.parent.split('/')
+      const checkParentInActive =
+        await this.customProductRepository.checkParentCategoriesInActive(
+          parentId,
+        )
+      if (checkParentInActive == true) {
+        throw new BadRequestException('Danh mục này không tồn tại')
+      }
+
+      //Lấy tất cả các bài sản phẩm của các category cấp dưới
       const subCate = await this.customCategoryRep.findSubCategoryById(
         category.id,
       )
-      const subCateId = subCate.map(e => e.id)
+      const subCateId = subCate.filter(e => e.isActive == true).map(e => e.id)
       subCateId.push(category.id)
       const products = await this.customProductRepository.getProductsByCategory(
         subCateId,
@@ -211,21 +228,12 @@ export class ProductService extends CommonService {
     try {
       const productRepositoryTransaction =
         queryRunner.manager.getRepository(ProductEntity)
-      // Kiểm tra category của product có đang bị ẩn hay không
-      // Product chỉ bật hiển thì khi category của nó đang đc hiển thị
-      if (dto.isActive == true) {
-        const getProductDto = new GetProductDetailDto()
-        getProductDto.productId = dto.id
-        let isProductExisting =
-          await this.customProductRepository.adminGetProductDetail(
-            getProductDto,
-          )
-        if (!isProductExisting) {
-          throw new Error('Sản phẩm không tồn tại')
-        }
-        if (isProductExisting.category.isActive == false) {
-          throw new Error('Thất bại: Danh mục của sản phẩm này đang bị Ẩn')
-        }
+      const getProductDto = new GetProductDetailDto()
+      getProductDto.productId = dto.id
+      let isProductExisting =
+        await this.customProductRepository.adminGetProductDetail(getProductDto)
+      if (!isProductExisting) {
+        throw new Error('Sản phẩm không tồn tại')
       }
       let product = plainToClass(ProductEntity, dto)
       const productSaved = await productRepositoryTransaction.save(product)
