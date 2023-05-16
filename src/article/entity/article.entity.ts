@@ -1,14 +1,13 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryGeneratedColumn,CreateDateColumn,UpdateDateColumn } from "typeorm";
 import { MenuEntity } from "src/menu/entity/menu.entity";
 import { ArticleContentEntity } from "./article-content.entity";
 import { Exclude } from "class-transformer";
 import { BaseEntity } from "src/common/entity/base.entity";
 @Entity({ name: 'article' })
-export class ArticleEntity  extends BaseEntity {
+export class ArticleEntity {
     @PrimaryGeneratedColumn()
     @Index({ unique: true })
     id: number;
-    @Column({ nullable: false })
     name: string;
     @Column({ nullable: false })
     link: string;
@@ -22,11 +21,21 @@ export class ArticleEntity  extends BaseEntity {
     @ManyToOne(() => MenuEntity, (menu) => menu.articles)
     @JoinColumn({ name: 'menu_id' })
     menu: MenuEntity;
+    description?: string;
 
 
     @OneToMany(
         () => ArticleContentEntity,
         (content) => content.article,
-        { cascade: ['insert'] })
+        { cascade: ['insert','update'] })
     content: ArticleContentEntity[];
+
+
+    @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
+    createdAt: Date;
+    @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
+    updatedAt: Date;
+    // @Column({ type: 'json', name: 'other_language', nullable: true })
+    // otherLanguage: string;
+
 }

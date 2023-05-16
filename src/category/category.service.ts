@@ -123,7 +123,7 @@ export class CategoryService extends CommonService {
       const category = plainToClass(CategoryEntity, dto)
       const categorySaved = await categoryRepositoryTransaction.save(category)
 
-      //cập nhật các categories con
+      //Xóa categories con
       if (dto.softDeleted != null) {
         const subCategories =
           await this.customCategoryRepository.findSubCategoryById(dto.id)
@@ -151,9 +151,18 @@ export class CategoryService extends CommonService {
         queryRunner.manager.getRepository(CategoryEntity)
       dto.link = dto.link.startsWith('/') ? dto.link : `/${dto.link}`
       await this.validateCreateCategoryDto(dto, categoryRepositoryTransaction)
-      let category = new CategoryEntity()
-      category = plainToClass(CategoryEntity, dto)
-      // const categorySaved = await categoryRepositoryTransaction.save(category);
+      if (dto.parent) {
+        const checkCategoryParent =
+          await categoryRepositoryTransaction.findOneBy({
+            id: parseInt(dto.parent),
+          })
+        if (!checkCategoryParent) {
+          throw new BadRequestException('Danh mục cha không tồn tại')
+        }
+        dto.parent = `${checkCategoryParent.parent}/${dto.parent}`
+      }
+      let category = plainToClass(CategoryEntity, dto)
+
       const categorySaved = await categoryRepositoryTransaction.save(category)
 
       await this.managerTransaction.commit()

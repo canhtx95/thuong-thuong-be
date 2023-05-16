@@ -3,9 +3,8 @@ import { language } from '../constant'
 
 export class BaseDto {
   @ApiProperty({ example: 'EN', default: 'VI' })
-  language: language
+  language?: language = language.VIETNAMESE
   @ApiProperty({ example: 'admin' })
   role: string
+ 
 }
-
-

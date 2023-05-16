@@ -64,7 +64,7 @@ export class ProductService extends CommonService {
         products.otherLanguage,
       )
       products.name = productName ? productName : products.name
-      const content = this.getContentMultiLanguage(
+      const content = this.getContentExtensions(
         dto.language,
         products.content,
       )
@@ -102,6 +102,9 @@ export class ProductService extends CommonService {
         dto.categoryId,
         dto.categoryLink,
       )
+      if (!category || category.isActive == false) {
+        throw new BadRequestException('Danh mục này không tồn tại')
+      }
       // Kiểm tra danh mục cha có đang hoạt động hay không
       const parentId = category.parent.split('/')
       const checkParentInActive =
@@ -121,11 +124,7 @@ export class ProductService extends CommonService {
       const products = await this.customProductRepository.getProductsByCategory(
         subCateId,
       )
-      category.products = products
 
-      if (!category || category.isActive == false) {
-        throw new BadRequestException('Danh mục này không tồn tại')
-      }
       const categoryName = this.getNameMultiLanguage(
         dto.language,
         category.otherLanguage,
@@ -136,13 +135,15 @@ export class ProductService extends CommonService {
       delete category.parent
       delete category.isHighlight
 
-      category.products = category.products.filter(p => {
+      products.filter(p => {
         const name = this.getNameMultiLanguage(dto.language, p.otherLanguage)
         p.name = name ? name : p.name
         delete p.otherLanguage
+        delete p.isActive
+
         return p.isActive == true
       })
-      const response = new BaseResponse('Thành công', category)
+      const response = new BaseResponse('Thành công', { category, products })
       return response
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
@@ -155,6 +156,17 @@ export class ProductService extends CommonService {
         dto.categoryId,
         dto.categoryLink,
       )
+      const parentId = category.parent.split('/')
+
+        const checkParentInActive = await this.categoryRepository
+        .createQueryBuilder('cate')
+        .where('cate.softDeleted = true')
+        .andWhere('cate.id IN (:id)', { id: parentId })
+        .getMany()
+  
+      if (checkParentInActive.length > 0) {
+        throw new BadRequestException('Danh mục này không tồn tại')
+      }
       const subCate = await this.customCategoryRep.findSubCategoryById(
         category.id,
       )

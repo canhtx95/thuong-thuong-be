@@ -10,7 +10,7 @@ export class UpdateArticleDto {
     link: string;
     @ApiProperty({ example: '1', default: '' })
     @IsNotEmpty()
-    parent: string;
+    menuId: number;
     @ApiProperty({ example: 'tranh giấy' })
     description: string;
     @ApiProperty()

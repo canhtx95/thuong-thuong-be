@@ -19,15 +19,9 @@ export class CustomProductRepository {
     private dataSource: DataSource,
   ) {}
 
-  async getProductsByCategory (id: any[]): Promise<ProductEntity[]> {
+  async getProductsByCategory (id: any[]): Promise<any[]> {
     const products = await this.productRepository
       .createQueryBuilder('product')
-      .innerJoin(
-        'product.category',
-        'cate',
-        'cate.softDeleted = false AND cate.id IN (:categoryId)',
-        { categoryId: id },
-      )
       .select([
         'product.id',
         'product.name',
@@ -35,7 +29,9 @@ export class CustomProductRepository {
         'product.otherLanguage',
         'product.description',
         'product.isActive',
+        'product.categoryId'
       ])
+      .where('product.categoryId IN (:id)',{id: id})
       .getMany()
     return products
   }
