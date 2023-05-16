@@ -19,7 +19,8 @@ export class ArticleContentEntity {
   language: string
   @Column({ type: 'text' })
   content: string
-
+  @Column()
+  description: string
   @Column({ name: 'article_id' })
   articleId: number
 

@@ -37,7 +37,6 @@ export class ArticleController {
   }
 
   @ApiOperation({ summary: 'Xem chi tiết bài viết bằng link hoặc id - quyền admin' })
-  @PublicEndpoint()
   @Post('/admin-get-detail')
   adminGetArticleByIdOrLink (@Body() dto: getArticleDto): Promise<BaseResponse> {
     return this.articleService.adminGetArticleByIdOrLink(dto)
@@ -49,6 +48,13 @@ export class ArticleController {
   getArticleByMenuIdOrLink (@Body() dto: getArticleDto): Promise<BaseResponse> {
     return this.articleService.getArticleByMenuIdOrLink(dto)
   }
+
+  @ApiOperation({ summary: 'lấy các bài viết bằng link hoặc id của menu - quyền admin' })
+  @Post('admin-get-by-menu')
+  adminGetArticleByMenuIdOrLink (@Body() dto: getArticleDto): Promise<BaseResponse> {
+    return this.articleService.adminGetArticleByMenuIdOrLink(dto)
+  }
+
 
   @ApiOperation({ summary: 'Tạo mới bài viết' })
   @Post('create')
