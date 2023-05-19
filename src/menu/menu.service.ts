@@ -180,7 +180,6 @@ export class MenuService {
     for (let i = 0; i < arr.length; i++) {
       const e = arr[i]
       if (e.isActive == false || e.softDeleted == true) {
-        e.description = 'deleted'
         arr.splice(i, 1)
         i--;
       }
@@ -200,7 +199,6 @@ export class MenuService {
     for (let i = 0; i < arr.length; i++) {
       const e = arr[i]
       if (e.softDeleted == true) {
-        e.description = 'deleted'
         arr.splice(i, 1)
         i--;
       }

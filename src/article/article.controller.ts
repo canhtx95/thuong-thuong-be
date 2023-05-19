@@ -93,6 +93,6 @@ export class ArticleController {
   @ApiOperation({ summary: 'Seach  - quyền admin' })
   @Post('admin/search')
   async adminSearchProducts (@Body() dto: SearchDto): Promise<BaseResponse> {
-    return this.articleService.searchArticles(dto)
+    return this.articleService.adminSearchArticles(dto)
   }
 }

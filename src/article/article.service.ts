@@ -17,6 +17,7 @@ import { CommonService } from 'src/common/service/service.common'
 import { MenuEntity } from 'src/menu/entity/menu.entity'
 import { Pagination } from 'src/common/service/pagination.service'
 import { SearchDto } from 'src/common/dto/search.dto'
+import { MenuService } from 'src/menu/menu.service'
 @Injectable()
 export class ArticleService extends CommonService {
   constructor (
@@ -26,6 +27,7 @@ export class ArticleService extends CommonService {
     private readonly menuRepository: Repository<MenuEntity>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    private readonly menuService: MenuService,
   ) {
     super()
   }
@@ -315,17 +317,24 @@ export class ArticleService extends CommonService {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
   }
+  spreadOutMenu (arr: MenuEntity[]) {
+    let i = 0
+    while (i < arr.length) {
+      const menu = arr[i]
+      if (menu.children.length > 0) {
+        arr.push.apply(arr, menu.children)
+      }
+      i++
+    }
+    return arr.map(e => e.id)
+  }
 
   async searchArticles (dto: SearchDto): Promise<any> {
     try {
       // lấy tất cả các Menu đang hoạt động
-      const menuId = await this.menuRepository
-        .createQueryBuilder('menu')
-        .select('menu.id')
-        .where('menu.softDeleted = false AND menu.isActive = true')
-        .getMany()
-        .then(cate => cate.map(e => e.id))
-
+      const menuId = await this.menuService
+        .getAllMenu()
+        .then(res => this.spreadOutMenu(res.data))
       const queryRunner = this.articleRepository
         .createQueryBuilder('art')
         .innerJoin(
@@ -372,12 +381,9 @@ export class ArticleService extends CommonService {
   async adminSearchArticles (dto: SearchDto): Promise<any> {
     try {
       // lấy tất cả các Menu đang hoạt động
-      const menuId = await this.menuRepository
-        .createQueryBuilder('menu')
-        .select('menu.id')
-        .where('menu.softDeleted = false')
-        .getMany()
-        .then(cate => cate.map(e => e.id))
+      const menuId = await this.menuService
+      .adminGetAllMenu()
+      .then(res => this.spreadOutMenu(res.data))
 
       const queryRunner = this.articleRepository
         .createQueryBuilder('art')
