@@ -4,7 +4,7 @@ export class CommonService {
       return null
     }
     const map = new Map(Object.entries(data))
-    return map.get(language)
+    return map.get(language)?map.get(language):''
   }
   getContentExtensions (language: string, data: any[]) {
     try {

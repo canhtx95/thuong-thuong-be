@@ -33,7 +33,7 @@ export class CategoryService extends CommonService {
       let data = await this.customCategoryRepository.findAll()
       data = data.filter(element => {
         const name = this.getNameMultiLanguage(
-          dto.language,
+          dto?.language,
           element.otherLanguage,
         )
         element.name = name ? name : element.name
@@ -61,7 +61,18 @@ export class CategoryService extends CommonService {
   async getAllCategoriesByAdmin (): Promise<BaseResponse> {
     try {
       let data = await this.customCategoryRepository.findAll()
-      this.arrangeCategory(data, ROLE.ADMIN)
+      data.sort((a, b) => {
+        if (!a.parent) {
+          a.parent = ''
+        }
+        if (!b.parent) {
+          b.parent = ''
+        }
+        const level1 = a.parent.split('/').length
+        const level2 = b.parent.split('/').length
+        return level1 - level2
+      })
+      this.arrangeCategory(data)
       return new BaseResponse('Danh sách danh mục sản phẩm', data, 200)
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)

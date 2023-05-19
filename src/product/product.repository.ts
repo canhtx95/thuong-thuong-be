@@ -7,6 +7,8 @@ import { GetProductDetailDto } from './dto/get-product-detail.dto'
 import { CategoryEntity } from 'src/category/entity/category.entity'
 import { DataSource } from 'typeorm'
 import { ProductContentEntity } from './entity/product-content.entity'
+import { Pagination } from 'src/common/service/pagination.service'
+import { ROLE } from 'src/common/constant'
 @Injectable()
 export class CustomProductRepository {
   constructor (
@@ -19,20 +21,35 @@ export class CustomProductRepository {
     private dataSource: DataSource,
   ) {}
 
-  async getProductsByCategory (id: any[]): Promise<any[]> {
-    const products = await this.productRepository
+  async getProductsByCategory (
+    id: any[],
+    paging: Pagination,
+    language: string,
+    role?: string,
+  ): Promise<[ProductEntity[], number]> {
+    const createQueryBuilder = this.productRepository
       .createQueryBuilder('product')
+      .leftJoinAndSelect('product.content', 'content')
       .select([
         'product.id',
-        'product.name',
         'product.link',
-        'product.otherLanguage',
-        'product.description',
         'product.isActive',
-        'product.categoryId'
+        'product.softDeleted',
+        'content',
       ])
-      .where('product.categoryId IN (:id)',{id: id})
-      .getMany()
+      .where('1=1')
+      .andWhere('product.categoryId IN (:id)', { id: id })
+      .andWhere('content.language = :language', { language: language })
+
+    if (role == ROLE.ADMIN) {
+      createQueryBuilder.andWhere('product.softDeleted = false')
+    }else {
+      createQueryBuilder.andWhere('product.softDeleted = false').andWhere('product.isActive = true')
+    }
+    const products = await createQueryBuilder
+      .skip(paging.skip)
+      .take(paging.size)
+      .getManyAndCount()
     return products
   }
   async getProductDetail (dto: GetProductDetailDto): Promise<any> {
@@ -43,7 +60,7 @@ export class CustomProductRepository {
         'category',
         'category.softDeleted = false AND category.isActive = true',
       )
-      .leftJoinAndSelect(
+      .innerJoinAndSelect(
         'product.content',
         'content',
         'content.language =:language',
@@ -51,12 +68,8 @@ export class CustomProductRepository {
       )
       .select([
         'product.id',
-        'product.name',
         'product.link',
         'product.imgLink',
-        'product.description',
-        'product.otherLanguage',
-        'product.name',
         'category.id',
         'category.name',
         'category.link',
@@ -64,7 +77,7 @@ export class CustomProductRepository {
         'content',
       ])
 
-      .where('product.softDeleted = false AND product.isActive = true')
+      .where('(product.softDeleted = false AND product.isActive = true)')
       .andWhere('(product.link =:link OR product.id =:id)', {
         link: dto.productLink,
         id: dto.productId,
@@ -79,10 +92,13 @@ export class CustomProductRepository {
       .innerJoinAndSelect(
         'product.category',
         'category',
-        'category.softDeleted = false',
+        '(category.softDeleted = false)',
       )
-      .leftJoinAndSelect('product.content', 'content')
-      .where('product.softDeleted = false')
+      .innerJoinAndSelect(
+        'product.content',
+        'content'
+      )
+      .where('(product.softDeleted = false)')
       .andWhere('(product.link =:link OR product.id =:id)', {
         link: dto.productLink,
         id: dto.productId,
@@ -92,13 +108,22 @@ export class CustomProductRepository {
     return product
   }
 
-  async checkParentCategoriesInActive (id: any[]): Promise<boolean> {
-    const result = await this.categoryRepository
+  async checkParentCategoriesInActive (
+    id: any[],
+    role?: string,
+  ): Promise<boolean> {
+    const createQueryBuilder = this.categoryRepository
       .createQueryBuilder('cate')
-      .where('(cate.isActive = false OR cate.softDeleted = true)')
-      .andWhere('cate.id IN (:id)', { id: id })
-      .getMany()
+      .where('cate.id IN (:id)', { id: id })
 
+    if (role == ROLE.ADMIN) {
+      createQueryBuilder.andWhere('(cate.softDeleted = true)')
+    } else {
+      createQueryBuilder.andWhere(
+        '(cate.softDeleted = true OR cate.isActive = false)',
+      )
+    }
+    const result = await createQueryBuilder.getMany()
     return result.length > 0 ? true : false
   }
 }

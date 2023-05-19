@@ -1,5 +1,4 @@
 import { CategoryEntity } from 'src/category/entity/category.entity'
-import { BaseEntity } from 'src/common/entity/base.entity'
 import { OrderEntity } from 'src/order/entities/order.entity'
 import { ProductContentEntity } from 'src/product/entity/product-content.entity'
 import {
@@ -11,15 +10,15 @@ import {
   JoinColumn,
   OneToMany,
   OneToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm'
 
 @Entity({ name: 'product' })
-export class ProductEntity extends BaseEntity {
+export class ProductEntity {
   @PrimaryGeneratedColumn()
   @Index({ unique: true })
   id: number
-  @Column()
-  name: string
   @Column()
   link: string
   @Column({ default: true })
@@ -29,7 +28,7 @@ export class ProductEntity extends BaseEntity {
   @Column({ name: 'soft_deleted', default: false })
   softDeleted: boolean
   @Column({ name: 'img_link', nullable: true })
-  imgLink: boolean
+  imgLink: string
 
   @Column({ name: 'category_id' })
   categoryId: string
@@ -46,4 +45,9 @@ export class ProductEntity extends BaseEntity {
     cascade: ['insert', 'update', 'remove', 'soft-remove'],
   })
   order: OrderEntity
+
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
+  createdAt: Date
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
+  updatedAt: Date
 }

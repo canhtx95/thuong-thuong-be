@@ -15,7 +15,8 @@ export class ArticleEntity {
     isActive: boolean;
     @Column({ name: 'soft_deleted', default: false })
     softDeleted: boolean;
-
+    @Column({ name: 'img_link', nullable: true })
+    imgLink: string
     @Column({ name: 'menu_id' })
     menuId: number;
     @ManyToOne(() => MenuEntity, (menu) => menu.articles)
@@ -35,7 +36,6 @@ export class ArticleEntity {
     createdAt: Date;
     @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
     updatedAt: Date;
-    // @Column({ type: 'json', name: 'other_language', nullable: true })
-    // otherLanguage: string;
+
 
 }

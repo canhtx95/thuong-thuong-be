@@ -22,6 +22,8 @@ import { GetProductDetailDto } from './dto/get-product-detail.dto'
 import { UpdateStatusDto } from 'src/common/dto/update-status.dto'
 import { JwtAuthGuard, PublicEndpoint } from 'src/auth/guard/jwt.guard'
 import { FileInterceptorProduct } from 'src/config/upload-image.config'
+import { SearchDto } from '../common/dto/search.dto'
+import { ROLE } from 'src/common/constant'
 
 @ApiTags('Sản phẩm')
 @Controller('product')
@@ -30,7 +32,7 @@ export class ProductController {
   constructor (private readonly productService: ProductService) {}
 
   @ApiOperation({ summary: 'Thêm sản phẩm' })
-  @Post('create')
+  @Post('admin/create')
   async createProducts (@Body() dto: CreateProductDto): Promise<BaseResponse> {
     return this.productService.addProducts(dto)
   }
@@ -45,7 +47,7 @@ export class ProductController {
   @ApiOperation({
     summary: 'Lấy danh sách sản phẩm theo category - quyền admin',
   })
-  @Post('admin-get-products')
+  @Post('admin/get-products')
   async adminGetProducts (@Body() dto: GetProductsDto): Promise<BaseResponse> {
     return this.productService.adminGetProductsByCategory(dto)
   }
@@ -60,7 +62,7 @@ export class ProductController {
   }
 
   @ApiOperation({ summary: 'Xem chi tiết - quyền admin' })
-  @Post('admin-get-detail')
+  @Post('admin/get-detail')
   async adminGetProductDetail (
     @Body() dto: GetProductDetailDto,
   ): Promise<BaseResponse> {
@@ -68,28 +70,41 @@ export class ProductController {
   }
 
   @ApiOperation({ summary: 'Cập nhật sản phẩm' })
-  @Post('update')
+  @Post('admin/update')
   async updateProducts (@Body() dto: UpdateProductDto): Promise<BaseResponse> {
     return this.productService.updateProducts(dto)
   }
 
   @ApiOperation({ summary: 'Cập nhật trạng thái sản phẩm' })
-  @Post('update-status')
+  @Post('admin/update-status')
   async updateProductStatus (
     @Body() dto: UpdateStatusDto,
   ): Promise<BaseResponse> {
     return this.productService.updateProductStatus(dto)
   }
 
+  @ApiOperation({ summary: 'Seach product' })
+  @PublicEndpoint()
+  @Post('search')
+  async searchProducts (@Body() dto: SearchDto): Promise<BaseResponse> {
+    return this.productService.searchProduct(dto)
+  }
+
+  @ApiOperation({ summary: 'Seach product - quyền admin' })
+  @Post('admin/search')
+  async adminSearchProducts (@Body() dto: SearchDto): Promise<BaseResponse> {
+    return this.productService.adminSearchProduct(dto)
+  }
+
   @ApiOperation({ summary: 'upload image for Product' })
-  @Post('upload')
+  @Post('admin/upload')
   @UseInterceptors(FileInterceptorProduct)
   async uploadProductImage (
     @UploadedFiles() files: Array<Express.Multer.File>,
   ): Promise<any> {
     return files
   }
-  @Delete(':id')
+  @Delete('admin/:id')
   removeProduct (@Param('id') id: number) {
     return this.productService.removeProduct(+id)
   }

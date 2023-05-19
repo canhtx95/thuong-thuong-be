@@ -5,9 +5,6 @@ import { ProductContentEntity } from 'src/product/entity/product-content.entity'
 
 export class CreateProductDto extends CreateBaseDto {
 
-  @ApiProperty({ example: 'Tranh giay' })
-  @IsNotEmpty()
-  name: string;
 
   @ApiProperty({ example: '/tranh-giay' })
   @IsNotEmpty()

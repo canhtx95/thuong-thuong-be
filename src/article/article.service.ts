@@ -15,6 +15,8 @@ import { plainToClass } from 'class-transformer'
 import { UpdateStatusDto } from 'src/common/dto/update-status.dto'
 import { CommonService } from 'src/common/service/service.common'
 import { MenuEntity } from 'src/menu/entity/menu.entity'
+import { Pagination } from 'src/common/service/pagination.service'
+import { SearchDto } from 'src/common/dto/search.dto'
 @Injectable()
 export class ArticleService extends CommonService {
   constructor (
@@ -35,6 +37,7 @@ export class ArticleService extends CommonService {
       const menuDto = await this.menuRepository
         .createQueryBuilder('menu')
         .where('menu.softDeleted = false AND menu.isActive = true')
+        .select(['menu.id', 'menu.name', 'menu.link', 'menu.otherLanguage'])
         .andWhere('(menu.id =:id OR menu.link =:link)', {
           id: dto.id,
           link: dto.link,
@@ -49,20 +52,27 @@ export class ArticleService extends CommonService {
       ) {
         throw new Error('Menu không tồn tại')
       }
-      const menuDescendants = await menuTreeRepository.findDescendants(menuDto)
-      const menuDescendantsId = menuDescendants.map(e => e.id)
-      let articles = await this.articleRepository
+      const menuDescendantsId = await menuTreeRepository
+        .findDescendants(menuDto)
+        .then(menu => menu.map(m => m.id))
+      // const menuDescendantsId = menuDescendants.map(e => e.id)
+      const pagination = new Pagination(dto.page, dto.size)
+      const result = await this.articleRepository
         .createQueryBuilder('art')
-        .leftJoinAndSelect(
+        .innerJoinAndSelect(
           'art.content',
           'content',
-          'art.softDeleted = false AND art.isActive = true',
+          'content.language = :language',
+          { language: dto.language },
         )
-        .where('art.softDeleted = false AND art.isActive = true')
+        .select(['art.id', 'art.link', 'content'])
+        .where('(art.softDeleted = false AND art.isActive = true)')
         .andWhere('art.menuId IN (:id)', {
           id: menuDescendantsId,
         })
-        .getMany()
+        .skip(pagination.skip)
+        .take(pagination.size)
+        .getManyAndCount()
 
       const menuName = this.getNameMultiLanguage(
         dto.language,
@@ -70,22 +80,22 @@ export class ArticleService extends CommonService {
       )
       menuDto.name = menuName ? menuName : menuDto.name
       delete menuDto.otherLanguage
-
-      for (let i = 0; i < articles.length; i++) {
-        const article = articles[i]
-        const content = this.getContentExtensions(dto.language, article.content)
-        articles[i] = {
-          ...article,
+      const articles = result[0].map(art => {
+        const content = art.content[0]
+        delete art.content
+        return {
+          ...art,
           name: content.name,
           description: content.description,
         }
-        delete articles[i].content
-        delete articles[i].isActive
-        delete articles[i].softDeleted
-      }
+      })
+      let total = result[1]
+      pagination.createResult(total)
+
       const response = new BaseResponse('Lấy dữ liệu thành công', {
         menu: menuDto,
         articles,
+        pagination,
       })
       return response
     } catch (error) {
@@ -117,31 +127,56 @@ export class ArticleService extends CommonService {
       ) {
         throw new Error('Menu không tồn tại')
       }
-      const menuDescendants = await menuTreeRepository.findDescendants(menuDto)
-      const menuDescendantsId = menuDescendants.map(e => e.id)
-      let articles = await this.articleRepository
+      const menuDescendantsId = await menuTreeRepository
+        .findDescendants(menuDto)
+        .then(menu => menu.map(m => m.id))
+      // const menuDescendantsId = menuDescendants.map(e => e.id)
+      const pagination = new Pagination(dto.page, dto.size)
+      const result = await this.articleRepository
         .createQueryBuilder('art')
-        .leftJoinAndSelect('art.content', 'content', 'art.softDeleted = false')
+        .innerJoinAndSelect(
+          'art.content',
+          'content',
+          'content.language = :language',
+          { language: dto.language },
+        )
         .where('art.softDeleted = false')
         .andWhere('art.menuId IN (:id)', {
           id: menuDescendantsId,
         })
-        .getMany()
-        articles.forEach(e => {
-          delete e.content
-          delete e.createdAt
-          delete e.updatedAt
+        .skip(pagination.skip)
+        .take(pagination.size)
+        .getManyAndCount()
 
-        })
+      const menuName = this.getNameMultiLanguage(
+        dto.language,
+        menuDto.otherLanguage,
+      )
+      menuDto.name = menuName ? menuName : menuDto.name
+      delete menuDto.otherLanguage
+      const articles = result[0].map(art => {
+        const content = art.content[0]
+        delete art.content
+        return {
+          ...art,
+          name: content.name,
+          description: content.description,
+        }
+      })
+      let total = result[1]
+      pagination.createResult(total)
+
       const response = new BaseResponse('Lấy dữ liệu thành công', {
         menu: menuDto,
         articles,
+        pagination,
       })
       return response
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
   }
+
   async getArticleByIdOrLink (dto: getArticleDto): Promise<BaseResponse> {
     try {
       let article = await this.articleRepository
@@ -151,8 +186,13 @@ export class ArticleService extends CommonService {
           'menu',
           'menu.softDeleted = false AND menu.isActive = true',
         )
-        .leftJoinAndSelect('art.content', 'content')
-        .select(['art', 'menu.link', 'menu.name', 'content'])
+        .innerJoinAndSelect(
+          'art.content',
+          'content',
+          'content.language =:language',
+          { language: dto.language },
+        )
+        .select(['art', 'menu.id', 'menu.link', 'menu.name', 'content'])
         .where('art.softDeleted = false AND art.isActive = true')
         .andWhere('(art.id =:id OR art.link =:link)', {
           id: dto.id,
@@ -170,17 +210,16 @@ export class ArticleService extends CommonService {
       ) {
         throw new Error('Bài viết không tồn tại')
       }
-      const transformLanguage = this.getContentExtensions(
-        dto.language,
-        article.content,
-      )
-      article.content = transformLanguage.content
-      article.description = transformLanguage.description
-      article.name = transformLanguage.name
+
+      const extensions = article.content[0]
       delete article.isActive
       delete article.softDeleted
-      const response = new BaseResponse('Lấy dữ liệu thành công', article)
-      return response
+      return new BaseResponse('Lấy dữ liệu thành công', {
+        ...article,
+        name: extensions.name,
+        description: extensions.description,
+        content: extensions.content,
+      })
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
@@ -191,7 +230,7 @@ export class ArticleService extends CommonService {
       let article = await this.articleRepository
         .createQueryBuilder('art')
         .innerJoinAndSelect('art.menu', 'menu', 'menu.softDeleted = false')
-        .leftJoinAndSelect('art.content', 'content')
+        .innerJoinAndSelect('art.content', 'content')
         .select(['art', 'menu.id', 'menu.link', 'menu.name', 'content'])
         .where('art.softDeleted = false')
         .andWhere('(art.id =:id OR art.link =:link)', {
@@ -208,17 +247,7 @@ export class ArticleService extends CommonService {
       if (menuAncestor.some(e => e.softDeleted == true)) {
         throw new Error('Bài viết không tồn tại')
       }
-      // const transformLanguage = this.getContentExtensions(
-      //   dto.language,
-      //   article.content,
-      // )
-      // article.content = transformLanguage.content
-      // article.description = transformLanguage.description
-      // article.name = transformLanguage.name
-      // delete article.isActive
-      // delete article.softDeleted;
-      const response = new BaseResponse('Lấy dữ liệu thành công', article)
-      return response
+      return new BaseResponse('Lấy dữ liệu thành công', article)
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
@@ -281,6 +310,113 @@ export class ArticleService extends CommonService {
         result = await repository.save(article)
       })
       const response = new BaseResponse('Cập nhật bài viết thành công', result)
+      return response
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }
+  }
+
+  async searchArticles (dto: SearchDto): Promise<any> {
+    try {
+      // lấy tất cả các Menu đang hoạt động
+      const menuId = await this.menuRepository
+        .createQueryBuilder('menu')
+        .select('menu.id')
+        .where('menu.softDeleted = false AND menu.isActive = true')
+        .getMany()
+        .then(cate => cate.map(e => e.id))
+
+      const queryRunner = this.articleRepository
+        .createQueryBuilder('art')
+        .innerJoin(
+          'art.content',
+          'ext',
+          'ext.language = :language AND ext.name LIKE :name',
+          { language: dto.language, name: `%${dto.name}%` },
+        )
+        .select([
+          'art.id',
+          'art.link',
+          'ext.name',
+          'ext.language',
+          'ext.description',
+        ])
+        .where('art.softDeleted = false AND art.isActive = true')
+        .andWhere('art.menuId IN (:menuId)', {
+          menuId: menuId,
+        })
+      const pagination = new Pagination(dto.page, dto.size)
+      const result = await queryRunner
+        .skip(pagination.skip)
+        .take(pagination.size)
+        .getManyAndCount()
+      const articles = result[0].map(article => {
+        const ext = article.content[0]
+        delete article.content
+        return {
+          ...article,
+          name: ext.name,
+          description: ext.description,
+        }
+      })
+      pagination.createResult(result[1])
+      const response = new BaseResponse('Kết quả tìm kiếm', {
+        articles,
+        pagination,
+      })
+      return response
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }
+  }
+  async adminSearchArticles (dto: SearchDto): Promise<any> {
+    try {
+      // lấy tất cả các Menu đang hoạt động
+      const menuId = await this.menuRepository
+        .createQueryBuilder('menu')
+        .select('menu.id')
+        .where('menu.softDeleted = false')
+        .getMany()
+        .then(cate => cate.map(e => e.id))
+
+      const queryRunner = this.articleRepository
+        .createQueryBuilder('art')
+        .innerJoin(
+          'art.content',
+          'ext',
+          'ext.language = :language AND ext.name LIKE :name',
+          { language: dto.language, name: `%${dto.name}%` },
+        )
+        .select([
+          'art.id',
+          'art.link',
+          'ext.name',
+          'ext.language',
+          'ext.description',
+        ])
+        .where('art.softDeleted = false')
+        .andWhere('art.menuId IN (:menuId)', {
+          menuId: menuId,
+        })
+      const pagination = new Pagination(dto.page, dto.size)
+      const result = await queryRunner
+        .skip(pagination.skip)
+        .take(pagination.size)
+        .getManyAndCount()
+      const articles = result[0].map(article => {
+        const ext = article.content[0]
+        delete article.content
+        return {
+          ...article,
+          name: ext.name,
+          description: ext.description,
+        }
+      })
+      pagination.createResult(result[1])
+      const response = new BaseResponse('Kết quả tìm kiếm', {
+        articles,
+        pagination,
+      })
       return response
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)

@@ -19,8 +19,11 @@ import { CustomProductRepository } from './product.repository'
 import { UpdateStatusDto } from 'src/common/dto/update-status.dto'
 import { CategoryEntity } from 'src/category/entity/category.entity'
 import { CommonService } from 'src/common/service/service.common'
-import { language } from 'src/common/constant'
+import { ROLE } from 'src/common/constant'
 import { CustomCategoryRepository } from 'src/category/category.repository'
+import { Pagination } from 'src/common/service/pagination.service'
+import { SearchDto } from '../common/dto/search.dto'
+import { CategoryService } from 'src/category/category.service'
 
 @Injectable()
 export class ProductService extends CommonService {
@@ -32,18 +35,19 @@ export class ProductService extends CommonService {
     private readonly customProductRepository: CustomProductRepository,
     private readonly managerTransaction: DatabaseTransactionManagerService,
     private readonly customCategoryRep: CustomCategoryRepository,
+    private readonly categoryService: CategoryService,
   ) {
     super()
   }
 
   async getProductDetail (dto: GetProductDetailDto): Promise<BaseResponse> {
     try {
-      const products = await this.customProductRepository.getProductDetail(dto)
+      const product = await this.customProductRepository.getProductDetail(dto)
       // Kiểm tra danh mục cha có đang hoạt động hay không
-      if (!products) {
+      if (!product) {
         throw new BadRequestException('Sản phảm này không tồn tại')
       }
-      const parentId = products?.category?.parent?.split('/')
+      const parentId = product?.category?.parent?.split('/')
       const checkParentInActive =
         await this.customProductRepository.checkParentCategoriesInActive(
           parentId,
@@ -54,26 +58,21 @@ export class ProductService extends CommonService {
 
       const categoryName = this.getNameMultiLanguage(
         dto.language,
-        products.category.otherLanguage,
+        product.category.otherLanguage,
       )
-      products.category.name = categoryName ? categoryName : products.name
-      delete products.category.otherLanguage
+      product.category.name = categoryName
+        ? categoryName
+        : product.category.name
+      delete product.category.otherLanguage
+      delete product.category.parent
 
-      const productName = this.getNameMultiLanguage(
-        dto.language,
-        products.otherLanguage,
-      )
-      products.name = productName ? productName : products.name
-      const content = this.getContentExtensions(
-        dto.language,
-        products.content,
-      )
-      delete products.otherLanguage
-      const response = new BaseResponse('Thành công', {
-        ...products,
-        content,
+      const extensions = product.content[0]
+      return new BaseResponse('Thành công', {
+        ...product,
+        name: extensions.name,
+        description: extensions.description,
+        content: extensions.content,
       })
-      return response
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
@@ -81,16 +80,23 @@ export class ProductService extends CommonService {
 
   async adminGetProductDetail (dto: GetProductDetailDto): Promise<BaseResponse> {
     try {
-      dto.language = language.VIETNAMESE
-      const products = await this.customProductRepository.adminGetProductDetail(
+      const product = await this.customProductRepository.adminGetProductDetail(
         dto,
       )
-      if (!products) {
+      // Kiểm tra danh mục cha có đang hoạt động hay không
+      if (!product) {
         throw new BadRequestException('Sản phảm này không tồn tại')
       }
-
-      const response = new BaseResponse('Thành công', products)
-      return response
+      const parentId = product?.category?.parent?.split('/')
+      const checkParentInActive =
+        await this.customProductRepository.checkParentCategoriesInActive(
+          parentId,
+          ROLE.ADMIN,
+        )
+      if (checkParentInActive == true) {
+        throw new BadRequestException('Sản phảm này không tồn tại')
+      }
+      return new BaseResponse('Thành công', product)
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
@@ -116,13 +122,15 @@ export class ProductService extends CommonService {
       }
 
       //Lấy tất cả các bài sản phẩm của các category cấp dưới
-      const subCate = await this.customCategoryRep.findSubCategoryById(
-        category.id,
-      )
-      const subCateId = subCate.filter(e => e.isActive == true).map(e => e.id)
+      const subCateId = await this.customCategoryRep
+        .findSubCategoryById(category.id)
+        .then(arr => arr.filter(e => e.isActive == true).map(e => e.id))
       subCateId.push(category.id)
-      const products = await this.customProductRepository.getProductsByCategory(
+      const pagination = new Pagination(dto.page, dto.size)
+      const result = await this.customProductRepository.getProductsByCategory(
         subCateId,
+        pagination,
+        dto.language,
       )
 
       const categoryName = this.getNameMultiLanguage(
@@ -135,15 +143,24 @@ export class ProductService extends CommonService {
       delete category.parent
       delete category.isHighlight
 
-      products.filter(p => {
-        const name = this.getNameMultiLanguage(dto.language, p.otherLanguage)
-        p.name = name ? name : p.name
-        delete p.otherLanguage
-        delete p.isActive
-
-        return p.isActive == true
+      const products = result[0].map(product => {
+        const content = product.content[0]
+        delete product.content
+        delete product.isActive
+        delete product.softDeleted
+        return {
+          ...product,
+          name: content.name,
+          description: content.description,
+        }
       })
-      const response = new BaseResponse('Thành công', { category, products })
+      const count = result[1]
+      pagination.createResult(count)
+      const response = new BaseResponse('Thành công', {
+        category,
+        products,
+        pagination,
+      })
       return response
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
@@ -156,33 +173,54 @@ export class ProductService extends CommonService {
         dto.categoryId,
         dto.categoryLink,
       )
-      const parentId = category.parent.split('/')
-
-        const checkParentInActive = await this.categoryRepository
-        .createQueryBuilder('cate')
-        .where('cate.softDeleted = true')
-        .andWhere('cate.id IN (:id)', { id: parentId })
-        .getMany()
-  
-      if (checkParentInActive.length > 0) {
+      if (!category) {
         throw new BadRequestException('Danh mục này không tồn tại')
       }
-      const subCate = await this.customCategoryRep.findSubCategoryById(
-        category.id,
-      )
-      const subCateId = subCate.map(e => e.id)
-      subCateId.push(category.id)
-      const products = await this.customProductRepository.getProductsByCategory(
-        subCateId,
-      )
-      category.products = products
+      // Kiểm tra danh mục cha có đang hoạt động hay không
+      const parentId = category.parent.split('/')
+      const checkParentInActive =
+        await this.customProductRepository.checkParentCategoriesInActive(
+          parentId,
+          ROLE.ADMIN,
+        )
+      if (checkParentInActive == true) {
+        throw new BadRequestException('Danh mục này không tồn tại')
+      }
 
-      const response = new BaseResponse('Thành công', category)
+      //Lấy tất cả các bài sản phẩm của các category cấp dưới
+      const subCateId = await this.customCategoryRep
+        .findSubCategoryById(category.id)
+        .then(arr => arr.map(e => e.id))
+      subCateId.push(category.id)
+      const pagination = new Pagination(dto.page, dto.size)
+      const result = await this.customProductRepository.getProductsByCategory(
+        subCateId,
+        pagination,
+        dto.language,
+        ROLE.ADMIN,
+      )
+      const products = result[0].map(product => {
+        const content = product.content[0]
+        delete product.content
+        return {
+          ...product,
+          name: content.name,
+          description: content.description,
+        }
+      })
+      const count = result[1]
+      pagination.createResult(count)
+      const response = new BaseResponse('Thành công', {
+        category,
+        products,
+        pagination,
+      })
       return response
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
   }
+
   async addProducts (dto: CreateProductDto): Promise<BaseResponse> {
     const queryRunner = await this.managerTransaction.createTransaction()
     try {
@@ -220,8 +258,7 @@ export class ProductService extends CommonService {
       if (checkLinkProduct && checkLinkProduct.id != dto.id) {
         throw new BadRequestException('Đường dẫn danh mục sản phẩm đã tồn tại')
       }
-      let product = new ProductEntity()
-      product = plainToClass(ProductEntity, dto)
+      let product = plainToClass(ProductEntity, dto)
       const productSaved = await categoryRepositoryTransaction.save(product)
       await this.managerTransaction.commit()
       const response = new BaseResponse(
@@ -260,6 +297,121 @@ export class ProductService extends CommonService {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
   }
+
+  spreadOutCategory (arr: CategoryEntity[]) {
+    let i = 0
+    while (i < arr.length) {
+      const cate = arr[i]
+      if (cate.subCategories.length > 0) {
+        arr.push.apply(arr, cate.subCategories)
+      }
+      i++
+    }
+    return arr.map(e => e.id)
+  }
+
+  async searchProduct (dto: SearchDto): Promise<any> {
+    try {
+      // lấy tất cả các category đang hoạt động
+      const findRootCategories = await this.categoryService.getAllCategories(
+        null,
+      )
+      const categoryId = this.spreadOutCategory(findRootCategories.data)
+      const productQueryBuilder = this.productRepository
+        .createQueryBuilder('product')
+        .innerJoin(
+          'product.content',
+          'ext',
+          'ext.language = :language AND ext.name LIKE :name',
+          { language: dto.language, name: `%${dto.name}%` },
+        )
+        .select([
+          'product.id',
+          'product.link',
+          'ext.name',
+          'ext.language',
+          'ext.description',
+        ])
+        .where('product.softDeleted = false AND product.isActive = true')
+        .andWhere('product.categoryId IN (:categoryId)', {
+          categoryId: categoryId,
+        })
+      const pagination = new Pagination(dto.page, dto.size)
+      const result = await productQueryBuilder
+        .skip(pagination.skip)
+        .take(pagination.size)
+        .getManyAndCount()
+      const products = result[0].map(product => {
+        const ext = product.content[0]
+        delete product.content
+        return {
+          ...product,
+          name: ext.name,
+          description: ext.description,
+        }
+      })
+      pagination.createResult(result[1])
+      const response = new BaseResponse('Kết quả tìm kiếm', {
+        products,
+        pagination,
+      })
+      return response
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }
+  }
+
+  async adminSearchProduct (dto: SearchDto): Promise<any> {
+    try {
+      // lấy tất cả các category đang hoạt động
+      const findRootCategories =
+        await this.categoryService.getAllCategoriesByAdmin()
+      const categoryId = this.spreadOutCategory(findRootCategories.data)
+
+      const pagination = new Pagination(dto.page, dto.size)
+      const result = await this.productRepository
+        .createQueryBuilder('product')
+        .innerJoin(
+          'product.content',
+          'ext',
+          'ext.language = :language AND ext.name LIKE :name',
+          { language: dto.language, name: `%${dto.name}%` },
+        )
+        .select([
+          'product.id',
+          'product.link',
+          'product.isActive',
+          'ext.name',
+          'ext.language',
+          'ext.description',
+        ])
+        .where('product.softDeleted = false')
+        .andWhere('product.categoryId IN (:categoryId)', {
+          categoryId: categoryId,
+        })
+        .skip(pagination.skip)
+        .take(pagination.size)
+        .getManyAndCount()
+      const products = result[0].map(product => {
+        const ext = product.content[0]
+        delete product.content
+        return {
+          ...product,
+          name: ext.name,
+          description: ext.description,
+        }
+      })
+      pagination.createResult(result[1])
+      const response = new BaseResponse('Kết quả tìm kiếm', {
+        products,
+        pagination,
+      })
+      return response
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }
+  }
+
   async removeProduct (id: number): Promise<BaseResponse> {
     try {
       const products = await this.productRepository.delete(id)

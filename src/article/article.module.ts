@@ -5,6 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ArticleEntity } from './entity/article.entity';
 import { ArticleContentEntity } from './entity/article-content.entity';
 import { MenuEntity } from 'src/menu/entity/menu.entity';
+import { CategoryService } from 'src/category/category.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ArticleEntity, ArticleContentEntity,MenuEntity])],

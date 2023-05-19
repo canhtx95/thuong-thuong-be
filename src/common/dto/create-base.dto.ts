@@ -1,9 +1,8 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty } from '@nestjs/swagger'
 
 export class CreateBaseDto {
-  @ApiProperty({ example: 'English' })
-  otherLanguage: string;
-  @ApiProperty({ example: 'tranh giấy' })
-  description: string;
-
+  @ApiProperty({ example: 'English', nullable: true })
+  otherLanguage: string
+  @ApiProperty({ example: 'tranh giấy', nullable: true })
+  description: string
 }

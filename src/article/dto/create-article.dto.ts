@@ -18,4 +18,6 @@ export class CreateArticleDto {
   // otherLanguage: Map<string, string>;
   @IsNotEmpty()
   content: ArticleContentEntity[]
+  imgLink: string
+
 }

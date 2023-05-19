@@ -16,18 +16,13 @@ import { UpdateStatusDto } from 'src/common/dto/update-status.dto'
 import { JwtAuthGuard, PublicEndpoint } from 'src/auth/guard/jwt.guard'
 import { FileInterceptorArticle } from 'src/config/upload-image.config'
 import { Multer } from 'multer'
+import { SearchDto } from 'src/common/dto/search.dto'
 
 @ApiTags('Bài viết - article')
 @UseGuards(JwtAuthGuard)
 @Controller('article')
 export class ArticleController {
   constructor (private readonly articleService: ArticleService) {}
-
-  // @ApiOperation({ summary: 'Lấy tất cả bài viết' })
-  // @Get('')
-  // getAllArticle(@Body() dto: getArticleDto): Promise<BaseResponse> {
-  //   return this.articleService.getArticleByIdOrLink(dto);
-  // }
 
   @ApiOperation({ summary: 'Xem chi tiết bài viết bằng link hoặc id' })
   @PublicEndpoint()
@@ -36,8 +31,10 @@ export class ArticleController {
     return this.articleService.getArticleByIdOrLink(dto)
   }
 
-  @ApiOperation({ summary: 'Xem chi tiết bài viết bằng link hoặc id - quyền admin' })
-  @Post('/admin-get-detail')
+  @ApiOperation({
+    summary: 'Xem chi tiết bài viết bằng link hoặc id - quyền admin',
+  })
+  @Post('/admin/get-detail')
   adminGetArticleByIdOrLink (@Body() dto: getArticleDto): Promise<BaseResponse> {
     return this.articleService.adminGetArticleByIdOrLink(dto)
   }
@@ -49,12 +46,15 @@ export class ArticleController {
     return this.articleService.getArticleByMenuIdOrLink(dto)
   }
 
-  @ApiOperation({ summary: 'lấy các bài viết bằng link hoặc id của menu - quyền admin' })
+  @ApiOperation({
+    summary: 'lấy các bài viết bằng link hoặc id của menu - quyền admin',
+  })
   @Post('admin/get-by-menu')
-  adminGetArticleByMenuIdOrLink (@Body() dto: getArticleDto): Promise<BaseResponse> {
+  adminGetArticleByMenuIdOrLink (
+    @Body() dto: getArticleDto,
+  ): Promise<BaseResponse> {
     return this.articleService.adminGetArticleByMenuIdOrLink(dto)
   }
-
 
   @ApiOperation({ summary: 'Tạo mới bài viết' })
   @Post('create')
@@ -81,5 +81,18 @@ export class ArticleController {
     @UploadedFiles() files: Array<Express.Multer.File>,
   ): Promise<any> {
     return files
+  }
+
+  @ApiOperation({ summary: 'Seach ' })
+  @PublicEndpoint()
+  @Post('search')
+  async searchProducts (@Body() dto: SearchDto): Promise<BaseResponse> {
+    return this.articleService.searchArticles(dto)
+  }
+
+  @ApiOperation({ summary: 'Seach  - quyền admin' })
+  @Post('admin/search')
+  async adminSearchProducts (@Body() dto: SearchDto): Promise<BaseResponse> {
+    return this.articleService.searchArticles(dto)
   }
 }

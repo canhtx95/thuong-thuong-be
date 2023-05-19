@@ -74,4 +74,15 @@ export class CustomCategoryRepository {
       .getMany()
     return data
   }
+
+  async findRootCategories (): Promise<CategoryEntity[]> {
+    const data = await this.categoryRepository
+      .createQueryBuilder('cate')
+      .select(['cate.id'])
+      .where(
+        `cate.softDeleted = false AND (cate.parent = '' OR cate.parent is null)`
+      )
+      .getMany()
+    return data
+  }
 }

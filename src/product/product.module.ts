@@ -8,6 +8,7 @@ import { CustomProductRepository } from './product.repository';
 import { CategoryEntity } from 'src/category/entity/category.entity';
 import { ProductContentEntity } from './entity/product-content.entity';
 import { CustomCategoryRepository } from 'src/category/category.repository';
+import { CategoryService } from 'src/category/category.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([ProductEntity, CategoryEntity, ProductContentEntity])],
@@ -15,6 +16,7 @@ import { CustomCategoryRepository } from 'src/category/category.repository';
   providers: [ProductService,
     DatabaseTransactionManagerService,
     CustomProductRepository,
-    CustomCategoryRepository]
+    CustomCategoryRepository,
+    CategoryService]
 })
 export class ProductModule { }

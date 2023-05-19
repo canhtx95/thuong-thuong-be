@@ -24,7 +24,10 @@ export class ProductContentEntity {
   content: string
   @Column({ name: 'product_id' })
   productId: number
-
+  @Column()
+  name: string
+  @Column()
+  description: string
   @ManyToOne(() => ProductEntity, product => product.content)
   @JoinColumn({ name: 'product_id' })
   product: ProductEntity
