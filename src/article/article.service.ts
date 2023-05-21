@@ -39,7 +39,7 @@ export class ArticleService extends CommonService {
       const menuDto = await this.menuRepository
         .createQueryBuilder('menu')
         .where('menu.softDeleted = false AND menu.isActive = true')
-        .select(['menu.id', 'menu.name', 'menu.link', 'menu.otherLanguage'])
+        .select(['menu.id', 'menu.name', 'menu.link'])
         .andWhere('(menu.id =:id OR menu.link =:link)', {
           id: dto.id,
           link: dto.link,
@@ -76,12 +76,10 @@ export class ArticleService extends CommonService {
         .take(pagination.size)
         .getManyAndCount()
 
-      const menuName = this.getNameMultiLanguage(
+       menuDto.name = this.getNameMultiLanguage(
         dto.language,
-        menuDto.otherLanguage,
+        menuDto.name,
       )
-      menuDto.name = menuName ? menuName : menuDto.name
-      delete menuDto.otherLanguage
       const articles = result[0].map(art => {
         const content = art.content[0]
         delete art.content
@@ -125,8 +123,8 @@ export class ArticleService extends CommonService {
       }
       const menuAncestor = await menuTreeRepository.findAncestors(menuDto)
       if (
-        menuAncestor.some(e => e.isActive == false || e.softDeleted == true)
-      ) {
+        menuAncestor.some(e =>e.softDeleted == true)
+      ) { 
         throw new Error('Menu không tồn tại')
       }
       const menuDescendantsId = await menuTreeRepository
@@ -150,12 +148,10 @@ export class ArticleService extends CommonService {
         .take(pagination.size)
         .getManyAndCount()
 
-      const menuName = this.getNameMultiLanguage(
+        menuDto.name = this.getNameMultiLanguage(
         dto.language,
-        menuDto.otherLanguage,
+        menuDto.name,
       )
-      menuDto.name = menuName ? menuName : menuDto.name
-      delete menuDto.otherLanguage
       const articles = result[0].map(art => {
         const content = art.content[0]
         delete art.content
@@ -265,7 +261,6 @@ export class ArticleService extends CommonService {
           throw new Error('Đường dẫn đã tồn tại')
         }
         const article = plainToClass(ArticleEntity, dto)
-        // article.otherLanguage = article.otherLanguage
         result = await repository.save(article)
       })
       const response = new BaseResponse('Tạo bài viết thành công ', result)
@@ -333,7 +328,7 @@ export class ArticleService extends CommonService {
     try {
       // lấy tất cả các Menu đang hoạt động
       const menuId = await this.menuService
-        .getAllMenu()
+        .getAllMenu(null)
         .then(res => this.spreadOutMenu(res.data))
       const queryRunner = this.articleRepository
         .createQueryBuilder('art')

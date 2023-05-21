@@ -1,16 +1,16 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger'
+import { IsNotEmpty } from 'class-validator'
 export class CreateCategoryDto {
   @ApiProperty({ example: 'Tranh giay' })
   @IsNotEmpty()
-  name: string;
+  name: any
   @ApiProperty({ example: '/tranh-giay' })
   @IsNotEmpty()
-  link: string;
+  link: string
   @ApiProperty({ example: '1', default: '' })
-  parent: string;
+  parent: string
   @ApiProperty({ example: 'tranh giấy' })
-  description: string;
+  description: string
   @ApiProperty()
-  otherLanguage: Object;
+  otherLanguage: Object
 }

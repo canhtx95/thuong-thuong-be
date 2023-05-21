@@ -13,16 +13,20 @@ import { DatabaseTransactionManagerService } from 'src/common/database-transacti
 import { plainToClass } from 'class-transformer'
 import { UpdateMenuDto } from './dto/update-menu.dto'
 import { UpdateStatusDto } from 'src/common/dto/update-status.dto'
+import { CommonService } from 'src/common/service/service.common'
+import { language } from 'src/common/constant'
 
 @Injectable()
-export class MenuService {
+export class MenuService extends CommonService {
   constructor (
     @InjectRepository(MenuEntity)
     private readonly menuRepository: Repository<MenuEntity>,
     private readonly managerTransaction: DatabaseTransactionManagerService,
     @InjectDataSource()
     private readonly dataSource: DataSource,
-  ) {}
+  ) {
+    super()
+  }
 
   async getMenuById (id: number): Promise<BaseResponse> {
     try {
@@ -33,12 +37,12 @@ export class MenuService {
     }
   }
 
-  async getAllMenu (): Promise<BaseResponse> {
+  async getAllMenu (dto: string): Promise<BaseResponse> {
     try {
       const menu = await this.dataSource.manager
         .getTreeRepository(MenuEntity)
         .findTrees()
-      this.filterMenuInActive(menu)
+      this.filterMenuInActive(menu, dto)
       return new BaseResponse('Menu', menu, 200)
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
@@ -153,9 +157,20 @@ export class MenuService {
   }
 
   async validateUpdateMenu (dto: UpdateMenuDto) {
-    const checkName = await this.menuRepository.findOneBy({ name: dto.name })
-    if (checkName && checkName.id != dto.id) {
-      throw new BadRequestException('Tên Menu sản phẩm đã tồn tại')
+    for (let k in dto.name) {
+      const v = dto.name[k]
+      const checkName = await this.menuRepository
+        .createQueryBuilder('menu')
+        .where('menu.name LIKE :name', { name: `%${v}%` })
+        .getMany()
+
+      if (checkName.length > 0) {
+        checkName.forEach(menu => {
+          if (menu.name[k] == v && menu.id != dto.id) {
+            throw new Error(`Tên Menu '${v}' đã tồn tại`)
+          }
+        })
+      }
     }
     const checkLink = await this.menuRepository.findOneBy({ link: dto.link })
     if (checkLink && checkLink.id != dto.id) {
@@ -164,24 +179,36 @@ export class MenuService {
   }
 
   async validateCreateMenu (dto: CreateMenuDto) {
-    const checkName = await this.menuRepository.findOneBy({ name: dto.name })
-    if (checkName) {
-      throw new BadRequestException('Tên Menu đã tồn tại')
+    for (let k in dto.name) {
+      const v = dto.name[k]
+      const checkName = await this.menuRepository
+        .createQueryBuilder('menu')
+        .where('menu.name LIKE :name', { name: `%${v}%` })
+        .getMany()
+
+      if (checkName.length > 0) {
+        checkName.forEach(menu => {
+          if (menu.name[k] == v) {
+            throw new Error(`Tên Menu '${v}' đã tồn tại`)
+          }
+        })
+      }
     }
     const checkLink = await this.menuRepository.findOneBy({ link: dto.link })
     if (checkLink) {
       throw new BadRequestException('Đường dẫn Menu đã tồn tại')
     }
-    if (dto.parentId) {
-      //   await this.checkMenuLevel(dto.parentId)
-    }
   }
-  filterMenuInActive (arr: MenuEntity[]) {
+  filterMenuInActive (arr: MenuEntity[], language: string) {
     for (let i = 0; i < arr.length; i++) {
       const e = arr[i]
+      if (e.name) {
+        const name = e.name[language]
+        arr[i].name = name ? name : ''
+      }
       if (e.isActive == false || e.softDeleted == true) {
         arr.splice(i, 1)
-        i--;
+        i--
       }
       delete e.softDeleted
       delete e.priority
@@ -189,21 +216,24 @@ export class MenuService {
       delete e.createdAt
       delete e.updatedAt
       if (e.children.length > 0) {
-        this.filterMenuInActive(e.children)
+        this.filterMenuInActive(e.children, language)
       } else continue
     }
-    
   }
- 
+
   adminFilterMenuInActive (arr: MenuEntity[]) {
     for (let i = 0; i < arr.length; i++) {
       const e = arr[i]
+      if (e.name) {
+        const name = e.name[language.VIETNAMESE]
+        arr[i].name = name ? name : ''
+      }
       if (e.softDeleted == true) {
         arr.splice(i, 1)
-        i--;
+        i--
       }
       if (e.children.length > 0) {
-        this.filterMenuInActive(e.children)
+        this.adminFilterMenuInActive(e.children)
       } else continue
     }
   }

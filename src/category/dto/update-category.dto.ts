@@ -7,7 +7,7 @@ export class UpdateCategoryDto {
   id: number
   @ApiProperty({ example: 'Tranh giay' })
   @IsNotEmpty()
-  name: string
+  name: any
   @ApiProperty({ example: '/tranh-giay' })
   @IsNotEmpty()
   link: string

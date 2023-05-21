@@ -17,7 +17,6 @@ export class CustomCategoryRepository {
         'link',
         'isHighlight',
         'isActive',
-        'otherLanguage',
         'parent',
         'description',
       ],
@@ -38,7 +37,6 @@ export class CustomCategoryRepository {
         'cate.link',
         'cate.isHighlight',
         'cate.isActive',
-        'cate.otherLanguage',
         'cate.parent',
       ])
       .where(`cate.soft_deleted = :sd`, {
@@ -62,7 +60,6 @@ export class CustomCategoryRepository {
         'cate.link',
         'cate.isHighlight',
         'cate.isActive',
-        'cate.otherLanguage',
         'cate.parent',
       ])
       .where(

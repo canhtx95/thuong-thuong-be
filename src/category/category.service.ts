@@ -16,7 +16,7 @@ import { CustomCategoryRepository } from './category.repository'
 import { UpdateCategoryDto } from './dto/update-category.dto'
 import { UpdateCategoryStatusDto } from './dto/update-category-status.dto'
 import { CommonService } from 'src/common/service/service.common'
-import { ROLE } from 'src/common/constant'
+import { ROLE, language } from 'src/common/constant'
 @Injectable()
 export class CategoryService extends CommonService {
   constructor (
@@ -32,12 +32,7 @@ export class CategoryService extends CommonService {
     try {
       let data = await this.customCategoryRepository.findAll()
       data = data.filter(element => {
-        const name = this.getNameMultiLanguage(
-          dto?.language,
-          element.otherLanguage,
-        )
-        element.name = name ? name : element.name
-        delete element.otherLanguage
+        element.name = this.getNameMultiLanguage(dto?.language, element.name)
         return element.isActive == true
       })
       data.sort((a, b) => {
@@ -61,6 +56,9 @@ export class CategoryService extends CommonService {
   async getAllCategoriesByAdmin (): Promise<BaseResponse> {
     try {
       let data = await this.customCategoryRepository.findAll()
+      data.forEach(
+        e => (e.name = this.getNameMultiLanguage(language.VIETNAMESE, e.name)),
+      )
       data.sort((a, b) => {
         if (!a.parent) {
           a.parent = ''
@@ -192,9 +190,20 @@ export class CategoryService extends CommonService {
     dto: CreateCategoryDto,
     repository: Repository<CategoryEntity>,
   ): Promise<any> {
-    const checkCategoryName = await repository.findOneBy({ name: dto.name })
-    if (checkCategoryName) {
-      throw new BadRequestException('Tên danh mục sản phẩm đã tồn tại')
+    for (let k in dto.name) {
+      const v = dto.name[k]
+      const checkCategoryName = await repository
+        .createQueryBuilder('cate')
+        .where('cate.name LIKE :name', { name: `%${v}%` })
+        .getMany()
+
+      if (checkCategoryName.length > 0) {
+        checkCategoryName.forEach(cate => {
+          if (cate.name[k] == v) {
+            throw new Error(`Tên danh mục '${v}' đã tồn tại`)
+          }
+        })
+      }
     }
     const checkCategoryLink = await repository.findOneBy({ link: dto.link })
     if (checkCategoryLink) {
@@ -207,10 +216,22 @@ export class CategoryService extends CommonService {
     repository: Repository<CategoryEntity>,
     subCategories: CategoryEntity[],
   ): Promise<any> {
-    const checkCategoryName = await repository.findOneBy({ name: dto.name })
-    if (checkCategoryName && checkCategoryName.id != dto.id) {
-      throw new BadRequestException('Tên danh mục sản phẩm đã tồn tại')
+    for (let k in dto.name) {
+      const v = dto.name[k]
+      const checkCategoryName = await repository
+        .createQueryBuilder('cate')
+        .where('cate.name LIKE :name', { name: `%${v}%` })
+        .getMany()
+
+      if (checkCategoryName.length > 0) {
+        checkCategoryName.forEach(cate => {
+          if (cate.name[k] == v && cate.id != dto.id) {
+            throw new Error(`Tên danh mục '${v}' đã tồn tại`)
+          }
+        })
+      }
     }
+
     const checkCategoryLink = await repository.findOneBy({ link: dto.link })
     if (checkCategoryLink && checkCategoryLink.id != dto.id) {
       throw new BadRequestException('Đường dẫn danh mục sản phẩm đã tồn tại')

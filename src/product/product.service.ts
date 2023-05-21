@@ -58,12 +58,11 @@ export class ProductService extends CommonService {
 
       const categoryName = this.getNameMultiLanguage(
         dto.language,
-        product.category.otherLanguage,
+        product.category.name,
       )
       product.category.name = categoryName
         ? categoryName
         : product.category.name
-      delete product.category.otherLanguage
       delete product.category.parent
 
       const extensions = product.content[0]
@@ -135,10 +134,9 @@ export class ProductService extends CommonService {
 
       const categoryName = this.getNameMultiLanguage(
         dto.language,
-        category.otherLanguage,
+        category.name,
       )
       category.name = categoryName ? categoryName : category.name
-      delete category.otherLanguage
       delete category.isActive
       delete category.parent
       delete category.isHighlight

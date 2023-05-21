@@ -24,27 +24,17 @@ export class MenuEntity extends BaseEntity {
   @PrimaryGeneratedColumn()
   @Index({ unique: true })
   id: number
-  @Column({ nullable: false })
+  @Column({ nullable: false, type: 'json' })
   name: string
   @Column({ nullable: false })
   link: string
   @Column({ default: true })
   isActive: boolean
 
-  // @Column({nullable: true })
-  // parentId: number
-
   @Column({ name: 'soft_deleted', default: false })
   softDeleted: boolean
   @Column({ default: 0 })
   priority: number
-
-  // @OneToMany((type) => MenuEntity, menu => menu.parent)
-  // subMenu: MenuEntity[];
-
-  // @ManyToOne((type) => MenuEntity, menu => menu.subMenu)
-  // @JoinColumn({ name: 'parent_id' })
-  // parent: MenuEntity
 
   @OneToMany(() => ArticleEntity, article => article.menu, {
     cascade: ['insert', 'update'],

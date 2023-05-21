@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Post, Param, UseGuards } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Param,
+  UseGuards,
+  Query,
+} from '@nestjs/common'
 import { MenuService } from './menu.service'
 import { ApiOperation, ApiTags } from '@nestjs/swagger'
 import { BaseResponse } from 'src/common/response/base.response'
@@ -16,8 +24,8 @@ export class MenuController {
   @ApiOperation({ summary: 'Lấy danh sách menu' })
   @Get('')
   @PublicEndpoint()
-  async getAllMenu (): Promise<BaseResponse> {
-    return this.menuService.getAllMenu()
+  async getAllMenu (@Query('language') language: string): Promise<BaseResponse> {
+    return this.menuService.getAllMenu(language)
   }
 
   @ApiOperation({ summary: 'Lấy danh sách menu' })

@@ -1,10 +1,10 @@
 export class CommonService {
   getNameMultiLanguage (language: string, data: string) {
-    if (language == 'VI' || language == null || data == null) {
-      return null
+    if (data) {
+      const map = new Map(Object.entries(data))
+      return map.get(language) ? map.get(language) : ''
     }
-    const map = new Map(Object.entries(data))
-    return map.get(language)?map.get(language):''
+    return ''
   }
   getContentExtensions (language: string, data: any[]) {
     try {

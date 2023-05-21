@@ -13,7 +13,7 @@ export class CategoryEntity extends BaseEntity {
   @PrimaryGeneratedColumn()
   @Index({ unique: true })
   id: number;
-  @Column({ nullable: false })
+  @Column({ nullable: false, type: 'json' })
   name: string;
   @Column({ nullable: false })
   link: string;

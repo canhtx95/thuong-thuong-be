@@ -3,7 +3,7 @@ import { IsNotEmpty } from 'class-validator';
 import { CreateBaseDto } from 'src/common/dto/create-base.dto';
 export class CreateMenuDto extends CreateBaseDto {
     @IsNotEmpty()
-    name: string;
+    name: any;
     @IsNotEmpty()
     link: string;
     isActive: boolean = true;
