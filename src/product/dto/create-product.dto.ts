@@ -14,7 +14,7 @@ export class CreateProductDto extends CreateBaseDto {
   categoryId: string;
 
   @ApiProperty()
-  imgLink: boolean;
+  imageUrl: boolean;
 
   @ApiProperty({ default: '' })
   productContent: ProductContentEntity;

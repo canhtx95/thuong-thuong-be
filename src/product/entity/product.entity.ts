@@ -28,7 +28,7 @@ export class ProductEntity {
   @Column({ name: 'soft_deleted', default: false })
   softDeleted: boolean
   @Column({ name: 'img_link', nullable: true })
-  imgLink: string
+  imageUrl: string
 
   @Column({ name: 'category_id' })
   categoryId: string

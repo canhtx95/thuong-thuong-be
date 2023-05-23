@@ -71,6 +71,7 @@ export class ProductService extends CommonService {
         name: extensions.name,
         description: extensions.description,
         content: extensions.content,
+        title: extensions.name,
       })
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
@@ -95,7 +96,7 @@ export class ProductService extends CommonService {
       if (checkParentInActive == true) {
         throw new BadRequestException('Sản phảm này không tồn tại')
       }
-      return new BaseResponse('Thành công', product)
+      return new BaseResponse('Thành công', {...product, title: product.name})
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
@@ -109,9 +110,14 @@ export class ProductService extends CommonService {
         // trường hợp categoryId và categoryId trống thì sẽ lấy tất cả các sản phẩm
         categoryIds = await this.getAllCategoriesActive()
       } else {
+        let categoryLink = dto.categoryLink
+        if (categoryLink && !categoryLink.startsWith('/')) {
+          categoryLink = `/${dto.categoryLink}`
+        }
+
         category = await this.customCategoryRep.findCategoryByIdOrLink(
           dto.categoryId,
-          dto.categoryLink,
+          categoryLink,
         )
         if (!category || category.isActive == false) {
           throw new BadRequestException('Danh mục này không tồn tại')
@@ -158,6 +164,7 @@ export class ProductService extends CommonService {
         return {
           ...product,
           name: content.name,
+          title: content.name,
           description: content.description,
         }
       })
@@ -173,8 +180,78 @@ export class ProductService extends CommonService {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
   }
-
   async adminGetProductsByCategory (dto: GetProductsDto): Promise<BaseResponse> {
+    try {
+      let category
+      let categoryIds = []
+      if (dto.categoryId == null && dto.categoryLink == null) {
+        // trường hợp categoryId và categoryId trống thì sẽ lấy tất cả các sản phẩm
+        categoryIds = await this.getAllCategoriesActive()
+      } else {
+        let categoryLink = dto.categoryLink
+        if (categoryLink && !categoryLink.startsWith('/')) {
+          categoryLink = `/${dto.categoryLink}`
+        }
+
+        category = await this.customCategoryRep.findCategoryByIdOrLink(
+          dto.categoryId,
+          categoryLink,
+        )
+        if (!category || category.isActive == false) {
+          throw new BadRequestException('Danh mục này không tồn tại')
+        }
+        // Kiểm tra danh mục cha có đang hoạt động hay không
+        const parentId = category.parent.split('/')
+        const checkParentInActive =
+          await this.customProductRepository.checkParentCategoriesInActive(
+            parentId,
+            ROLE.ADMIN,
+          )
+        if (checkParentInActive == true) {
+          throw new BadRequestException('Danh mục này không tồn tại')
+        }
+
+        //Lấy tất cả các bài sản phẩm của các category cấp dưới
+        categoryIds = await this.customCategoryRep
+          .findSubCategoryById(category.id)
+          .then(arr => arr.filter(e => e.isActive == true).map(e => e.id))
+        categoryIds.push(category.id)
+      }
+
+      const pagination = new Pagination(dto.page, dto.size)
+      const result = await this.customProductRepository.getProductsByCategory(
+        categoryIds,
+        pagination,
+        dto.language,
+        ROLE.ADMIN,
+      )
+
+      const products = result[0].map(product => {
+        const content = product.content[0]
+        delete product.content
+
+        return {
+          ...product,
+          name: content.name,
+          title: content.name,
+          description: content.description,
+        }
+      })
+      const count = result[1]
+      pagination.createResult(count)
+      const response = new BaseResponse('Thành công', {
+        category,
+        products,
+        pagination,
+      })
+      return response
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }
+  }
+  async adminGetProductsByCategory2 (
+    dto: GetProductsDto,
+  ): Promise<BaseResponse> {
     try {
       const category = await this.customCategoryRep.findCategoryByIdOrLink(
         dto.categoryId,
@@ -305,7 +382,6 @@ export class ProductService extends CommonService {
     }
   }
 
-  
   async getAllCategoriesActive () {
     const data = await this.categoryService.getAllCategories(null)
     let i = 0
@@ -444,6 +520,4 @@ export class ProductService extends CommonService {
   //     throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
   //   }
   // }
-
-  
 }

@@ -16,5 +16,5 @@ export class UpdateArticleDto {
   @ApiProperty()
   otherLanguage: Object
   @ApiProperty()
-  imgLink: string
+  imageUrl: string
 }

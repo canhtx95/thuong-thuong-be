@@ -35,6 +35,7 @@ export class CustomProductRepository {
         'product.link',
         'product.isActive',
         'product.softDeleted',
+        'product.imageUrl',
         'content',
       ])
       .where('1=1')
@@ -69,7 +70,7 @@ export class CustomProductRepository {
       .select([
         'product.id',
         'product.link',
-        'product.imgLink',
+        'product.imageUrl',
         'category.id',
         'category.name',
         'category.link',

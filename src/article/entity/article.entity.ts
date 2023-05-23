@@ -16,7 +16,7 @@ export class ArticleEntity {
     @Column({ name: 'soft_deleted', default: false })
     softDeleted: boolean;
     @Column({ name: 'img_link', nullable: true })
-    imgLink: string
+    imageUrl: string
     @Column({ name: 'menu_id' })
     menuId: number;
     @ManyToOne(() => MenuEntity, (menu) => menu.articles)
