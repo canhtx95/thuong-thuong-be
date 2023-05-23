@@ -83,18 +83,18 @@ export class ProductController {
     return this.productService.updateProductStatus(dto)
   }
 
-  @ApiOperation({ summary: 'Seach product' })
-  @PublicEndpoint()
-  @Post('search')
-  async searchProducts (@Body() dto: SearchDto): Promise<BaseResponse> {
-    return this.productService.searchProduct(dto)
-  }
+  // @ApiOperation({ summary: 'Seach product' })
+  // @PublicEndpoint()
+  // @Post('search')
+  // async searchProducts (@Body() dto: SearchDto): Promise<BaseResponse> {
+  //   return this.productService.searchProduct(dto)
+  // }
 
-  @ApiOperation({ summary: 'Seach product - quyền admin' })
-  @Post('admin/search')
-  async adminSearchProducts (@Body() dto: SearchDto): Promise<BaseResponse> {
-    return this.productService.adminSearchProduct(dto)
-  }
+  // @ApiOperation({ summary: 'Seach product - quyền admin' })
+  // @Post('admin/search')
+  // async adminSearchProducts (@Body() dto: SearchDto): Promise<BaseResponse> {
+  //   return this.productService.adminSearchProduct(dto)
+  // }
 
   @ApiOperation({ summary: 'upload image for Product' })
   @Post('admin/upload')

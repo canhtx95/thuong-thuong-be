@@ -205,7 +205,7 @@ export class MenuService extends CommonService {
       if (e.name) {
         const name = e.name[language]
         arr[i].name = name ? name : ''
-      }
+      } else e.name = ''
       if (e.isActive == false || e.softDeleted == true) {
         arr.splice(i, 1)
         i--
@@ -227,7 +227,7 @@ export class MenuService extends CommonService {
       if (e.name) {
         const name = e.name[language.VIETNAMESE]
         arr[i].name = name ? name : ''
-      }
+      } else e.name = ''
       if (e.softDeleted == true) {
         arr.splice(i, 1)
         i--

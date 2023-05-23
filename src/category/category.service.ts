@@ -190,6 +190,9 @@ export class CategoryService extends CommonService {
     dto: CreateCategoryDto,
     repository: Repository<CategoryEntity>,
   ): Promise<any> {
+    if (Object.keys(dto.name).length == 0) {
+      throw new Error(`Tên danh mục không hợp lệ`)
+    }
     for (let k in dto.name) {
       const v = dto.name[k]
       const checkCategoryName = await repository
