@@ -9,6 +9,7 @@ import {
   Delete,
   Param,
   Req,
+  Query,
 } from '@nestjs/common'
 import { ApiTags, ApiOperation } from '@nestjs/swagger'
 import { CategoryService } from './category.service'
@@ -51,9 +52,9 @@ export class CategoryController {
 
   @ApiOperation({ summary: 'Lấy hết category' })
   @PublicEndpoint()
-  @Post('')
-  getCategory (@Body() dto: getCategoryDto): Promise<BaseResponse> {
-    return this.categoryService.getAllCategories(dto)
+  @Get('')
+  getCategory (@Query('language') language: string): Promise<BaseResponse> {
+    return this.categoryService.getAllCategories(language)
   }
 
   @ApiOperation({ summary: 'Lấy hết category - quyền admin' })

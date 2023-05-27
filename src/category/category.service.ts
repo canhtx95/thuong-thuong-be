@@ -28,11 +28,11 @@ export class CategoryService extends CommonService {
     super()
   }
 
-  async getAllCategories (dto: getCategoryDto): Promise<BaseResponse> {
+  async getAllCategories (language: string): Promise<BaseResponse> {
     try {
       let data = await this.customCategoryRepository.findAll()
       data = data.filter(element => {
-        element.name = this.getNameMultiLanguage(dto?.language, element.name)
+        element.name = this.getNameMultiLanguage(language, element.name)
         return element.isActive == true
       })
       data.sort((a, b) => {

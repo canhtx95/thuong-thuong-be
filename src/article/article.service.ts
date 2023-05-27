@@ -76,16 +76,14 @@ export class ArticleService extends CommonService {
         .take(pagination.size)
         .getManyAndCount()
 
-       menuDto.name = this.getNameMultiLanguage(
-        dto.language,
-        menuDto.name,
-      )
+      menuDto.name = this.getNameMultiLanguage(dto.language, menuDto.name)
       const articles = result[0].map(art => {
         const content = art.content[0]
         delete art.content
         return {
           ...art,
           name: content.name,
+          title: content.name,
           description: content.description,
         }
       })
@@ -122,9 +120,7 @@ export class ArticleService extends CommonService {
         throw new Error('Menu không tồn tại')
       }
       const menuAncestor = await menuTreeRepository.findAncestors(menuDto)
-      if (
-        menuAncestor.some(e =>e.softDeleted == true)
-      ) { 
+      if (menuAncestor.some(e => e.softDeleted == true)) {
         throw new Error('Menu không tồn tại')
       }
       const menuDescendantsId = await menuTreeRepository
@@ -148,10 +144,7 @@ export class ArticleService extends CommonService {
         .take(pagination.size)
         .getManyAndCount()
 
-        menuDto.name = this.getNameMultiLanguage(
-        dto.language,
-        menuDto.name,
-      )
+      menuDto.name = this.getNameMultiLanguage(dto.language, menuDto.name)
       const articles = result[0].map(art => {
         const content = art.content[0]
         delete art.content
@@ -335,12 +328,15 @@ export class ArticleService extends CommonService {
         .innerJoin(
           'art.content',
           'ext',
-          'ext.language = :language AND ext.name LIKE :name',
+          'ext.language = :language ' +
+            (dto.name ? ' AND ext.name LIKE :name' : ''),
           { language: dto.language, name: `%${dto.name}%` },
         )
         .select([
           'art.id',
           'art.link',
+          'art.createdAt',
+          'art.imageUrl',
           'ext.name',
           'ext.language',
           'ext.description',
@@ -377,8 +373,8 @@ export class ArticleService extends CommonService {
     try {
       // lấy tất cả các Menu đang hoạt động
       const menuId = await this.menuService
-      .adminGetAllMenu()
-      .then(res => this.spreadOutMenu(res.data))
+        .adminGetAllMenu()
+        .then(res => this.spreadOutMenu(res.data))
 
       const queryRunner = this.articleRepository
         .createQueryBuilder('art')
