@@ -89,6 +89,29 @@ export class CategoryService extends CommonService {
     }
   }
 
+  async getSubCategory (id: number): Promise<BaseResponse> {
+    try {
+      const data = await this.categoryRepository
+        .createQueryBuilder('cate')
+        .select([
+          'cate.id',
+          'cate.name',
+          'cate.link',
+          'cate.isHighlight',
+          'cate.isActive',
+          'cate.parent',
+        ])
+        .where(`cate.parent = '/:id'`, {
+          id: id,
+        })
+        .getMany()
+
+      return new BaseResponse('Danh mục sản phẩm', data, 200)
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }
+  }
+
   async updateCategory (dto: UpdateCategoryDto): Promise<BaseResponse> {
     const queryRunner = await this.managerTransaction.createTransaction()
     try {

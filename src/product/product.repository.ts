@@ -44,8 +44,10 @@ export class CustomProductRepository {
 
     if (role == ROLE.ADMIN) {
       createQueryBuilder.andWhere('product.softDeleted = false')
-    }else {
-      createQueryBuilder.andWhere('product.softDeleted = false').andWhere('product.isActive = true')
+    } else {
+      createQueryBuilder
+        .andWhere('product.softDeleted = false')
+        .andWhere('product.isActive = true')
     }
     const products = await createQueryBuilder
       .skip(paging.skip)
@@ -71,6 +73,8 @@ export class CustomProductRepository {
         'product.id',
         'product.link',
         'product.imageUrl',
+        'product.createdAt',
+        'product.updatedAt',
         'category.id',
         'category.name',
         'category.link',
@@ -95,10 +99,7 @@ export class CustomProductRepository {
         'category',
         '(category.softDeleted = false)',
       )
-      .innerJoinAndSelect(
-        'product.content',
-        'content'
-      )
+      .innerJoinAndSelect('product.content', 'content')
       .where('(product.softDeleted = false)')
       .andWhere('(product.link =:link OR product.id =:id)', {
         link: dto.productLink,

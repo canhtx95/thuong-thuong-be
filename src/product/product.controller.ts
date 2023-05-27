@@ -9,6 +9,7 @@ import {
   Delete,
   Param,
   Req,
+  Query,
 } from '@nestjs/common'
 
 import { BaseResponse } from 'src/common/response/base.response'
@@ -54,17 +55,17 @@ export class ProductController {
 
   @ApiOperation({ summary: 'Xem chi tiết' })
   @PublicEndpoint()
-  @Post('detail')
+  @Get('detail')
   async getProductDetail (
-    @Body() dto: GetProductDetailDto,
+    @Query() dto: GetProductDetailDto,
   ): Promise<BaseResponse> {
     return this.productService.getProductDetail(dto)
   }
 
   @ApiOperation({ summary: 'Xem chi tiết - quyền admin' })
-  @Post('admin/get-detail')
+  @Get('admin/get-detail')
   async adminGetProductDetail (
-    @Body() dto: GetProductDetailDto,
+    @Query() dto: GetProductDetailDto,
   ): Promise<BaseResponse> {
     return this.productService.adminGetProductDetail(dto)
   }
@@ -98,10 +99,12 @@ export class ProductController {
 
   @ApiOperation({ summary: 'upload image for Product' })
   @Post('admin/upload')
+  @PublicEndpoint()
   @UseInterceptors(FileInterceptorProduct)
   async uploadProductImage (
     @UploadedFiles() files: Array<Express.Multer.File>,
   ): Promise<any> {
+    console.log(files)
     return files
   }
   @Delete('admin/:id')
