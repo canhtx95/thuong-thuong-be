@@ -78,7 +78,6 @@ export class CustomProductRepository {
         'category.id',
         'category.name',
         'category.link',
-        'category.parent',
         'content',
       ])
 

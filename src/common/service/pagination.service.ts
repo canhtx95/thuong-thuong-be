@@ -6,16 +6,17 @@ export class Pagination {
   page: number = 1
   @IsNumber()
   size: number = 20
-   totalRecords: number
-   skip: number
-   totalPages: number
+  totalRecords: number
+  skip: number
+  totalPages: number
   constructor (page: number, size: number) {
+    this.page = page
     this.skip = (page - 1) * size
     this.size = size
   }
   createResult (totalRecords: number) {
     this.totalRecords = totalRecords
-    this.totalPages = Math.ceil(totalRecords / this.size); // số trang
+    this.totalPages = Math.ceil(totalRecords / this.size) // số trang
     delete this.skip
   }
 }

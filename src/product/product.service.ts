@@ -56,15 +56,6 @@ export class ProductService extends CommonService {
         throw new BadRequestException('Sản phảm này không tồn tại')
       }
 
-      const categoryName = this.getNameMultiLanguage(
-        dto.language,
-        product.category.name,
-      )
-      product.category.name = categoryName
-        ? categoryName
-        : product.category.name
-      delete product.category.parent
-
       const extensions = product.content[0]
       return new BaseResponse('Thành công', {
         ...product,
@@ -72,6 +63,8 @@ export class ProductService extends CommonService {
         description: extensions.description,
         content: extensions.content,
         title: extensions.name,
+        danhMuc1: extensions.metadata.danhMuc1,
+        danhMuc2: extensions.metadata.danhMuc2,
       })
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
@@ -83,6 +76,7 @@ export class ProductService extends CommonService {
       const product = await this.customProductRepository.adminGetProductDetail(
         dto,
       )
+      delete product.category
       // Kiểm tra danh mục cha có đang hoạt động hay không
       if (!product) {
         throw new BadRequestException('Sản phảm này không tồn tại')
@@ -416,13 +410,19 @@ export class ProductService extends CommonService {
       const findRootCategories =
         await this.categoryService.getAllCategoriesByAdmin()
       const categoryId = this.spreadOutCategory(findRootCategories.data)
-
+      let searchName = 'AND ext.name LIKE :name'
+      if (dto.name == null || dto.name.trim() == '') {
+        searchName = ''
+      }
       const pagination = new Pagination(dto.page, dto.size)
       const result = await this.productRepository
         .createQueryBuilder('product')
-        .innerJoin('product.content', 'ext', 'ext.language = :language', {
-          language: dto.language,
-        })
+        .innerJoin(
+          'product.content',
+          'ext',
+          `ext.language = :language  ${searchName}`,
+          { language: dto.language, name: `%${dto.name}%` },
+        )
         .select([
           'product.id',
           'product.link',

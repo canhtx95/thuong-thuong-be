@@ -25,6 +25,7 @@ import { JwtAuthGuard, PublicEndpoint } from 'src/auth/guard/jwt.guard'
 import { FileInterceptorProduct } from 'src/config/upload-image.config'
 import { SearchDto } from '../common/dto/search.dto'
 import { ROLE } from 'src/common/constant'
+import { join } from 'path'
 
 @ApiTags('Sản phẩm')
 @Controller('product')
@@ -120,6 +121,8 @@ export class ProductController {
     @UploadedFiles() files: Array<Express.Multer.File>,
   ): Promise<any> {
     console.log(files)
+    console.log(join(__dirname, '..'))
+
     return files
   }
   @Delete('admin/:id')
