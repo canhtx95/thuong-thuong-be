@@ -31,4 +31,6 @@ export class ProductContentEntity {
   @ManyToOne(() => ProductEntity, product => product.content)
   @JoinColumn({ name: 'product_id' })
   product: ProductEntity
+  @Column({ nullable: false, type: 'json' })
+  metadata: any
 }

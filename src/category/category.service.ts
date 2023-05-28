@@ -89,7 +89,7 @@ export class CategoryService extends CommonService {
     }
   }
 
-  async getSubCategory (id: number): Promise<BaseResponse> {
+  async getCategoriesLevel2 (): Promise<BaseResponse> {
     try {
       const data = await this.categoryRepository
         .createQueryBuilder('cate')
@@ -101,11 +101,18 @@ export class CategoryService extends CommonService {
           'cate.isActive',
           'cate.parent',
         ])
-        .where(`cate.parent = '/:id'`, {
-          id: id,
-        })
+        .where(`cate.parent REGEXP '\^\/[0-9]{1,}\$'`)
         .getMany()
-
+        .then(data =>
+          data
+            .filter(cate => cate.name)
+            .map(cate => {
+              return {
+                ...cate,
+                name: cate.name['VI'] ? cate.name['VI'] : '',
+              }
+            }),
+        )
       return new BaseResponse('Danh mục sản phẩm', data, 200)
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)

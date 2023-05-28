@@ -53,6 +53,21 @@ export class ProductController {
     return this.productService.adminGetProductsByCategory(dto)
   }
 
+  @ApiOperation({ summary: 'Lấy danh sách sản phẩm' })
+  @PublicEndpoint()
+  @Get('get-all')
+  async getAllProducts (@Query() dto: SearchDto): Promise<BaseResponse> {
+    return this.productService.getAllProduct(dto)
+  }
+
+  @ApiOperation({
+    summary: 'Lấy tất cả sản phẩm quyền admin',
+  })
+  @Get('admin/get-all')
+  async adminGetAllProducts (@Query() dto: SearchDto): Promise<BaseResponse> {
+    return this.productService.adminGetAllProducts(dto)
+  }
+
   @ApiOperation({ summary: 'Xem chi tiết' })
   @PublicEndpoint()
   @Get('detail')

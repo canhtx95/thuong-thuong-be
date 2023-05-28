@@ -96,7 +96,7 @@ export class ProductService extends CommonService {
       if (checkParentInActive == true) {
         throw new BadRequestException('Sản phảm này không tồn tại')
       }
-      return new BaseResponse('Thành công', {...product, title: product.name})
+      return new BaseResponse('Thành công', { ...product, title: product.name })
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
@@ -249,66 +249,56 @@ export class ProductService extends CommonService {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
   }
-  async adminGetProductsByCategory2 (
-    dto: GetProductsDto,
-  ): Promise<BaseResponse> {
-    try {
-      const category = await this.customCategoryRep.findCategoryByIdOrLink(
-        dto.categoryId,
-        dto.categoryLink,
-      )
-      if (!category) {
-        throw new BadRequestException('Danh mục này không tồn tại')
-      }
-      // Kiểm tra danh mục cha có đang hoạt động hay không
-      const parentId = category.parent.split('/')
-      const checkParentInActive =
-        await this.customProductRepository.checkParentCategoriesInActive(
-          parentId,
-          ROLE.ADMIN,
-        )
-      if (checkParentInActive == true) {
-        throw new BadRequestException('Danh mục này không tồn tại')
-      }
 
-      //Lấy tất cả các bài sản phẩm của các category cấp dưới
-      const subCateId = await this.customCategoryRep
-        .findSubCategoryById(category.id)
-        .then(arr => arr.map(e => e.id))
-      subCateId.push(category.id)
-      const pagination = new Pagination(dto.page, dto.size)
-      const result = await this.customProductRepository.getProductsByCategory(
-        subCateId,
-        pagination,
-        dto.language,
-        ROLE.ADMIN,
-      )
-      const products = result[0].map(product => {
-        const content = product.content[0]
-        delete product.content
-        return {
-          ...product,
-          name: content.name,
-          description: content.description,
-        }
-      })
-      const count = result[1]
-      pagination.createResult(count)
-      const response = new BaseResponse('Thành công', {
-        category,
-        products,
-        pagination,
-      })
-      return response
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
-    }
+  getCategoriesNameWhenCreateProduct (
+    language: string,
+    danhMuc1: CategoryEntity,
+    danhMuc2: CategoryEntity,
+  ) {
+    const tenDanhMuc1 = danhMuc1.name
+    const tenDanhMuc2 = danhMuc2.name
+
+    // return { id: category.id, name: categoryName[language] }
+  }
+
+  async handleMetadataWhenCreateProduct (dto: CreateProductDto) {
+    const product = plainToClass(ProductEntity, dto)
+    let tenDanhMuc1: string
+    let tenDanhMuc2: string
+
+    let danhMuc1 = await this.categoryRepository.findOneBy({
+      id: dto.categoryLevel1Id,
+    })
+    let danhMuc2 = await this.categoryRepository.findOneBy({
+      id: dto.categoryLevel2Id,
+    })
+    tenDanhMuc1 = danhMuc1.name
+    tenDanhMuc2 = danhMuc2.name
+    const productExtens = product.content
+    productExtens.forEach(ext => {
+      const language = ext.language
+      const nameByLanguage1 = tenDanhMuc1[language]
+      const nameByLanguage2 = tenDanhMuc2[language]
+      ext.metadata = {
+        danhMuc1: {
+          id: danhMuc1.id,
+          name: nameByLanguage1,
+          link: danhMuc1.link,
+        },
+        danhMuc2: {
+          id: danhMuc2.id,
+          name: nameByLanguage2,
+          link: danhMuc2.link,
+        },
+      }
+    })
+    return product
   }
 
   async addProducts (dto: CreateProductDto): Promise<BaseResponse> {
     const queryRunner = await this.managerTransaction.createTransaction()
     try {
-      const categoryRepositoryTransaction =
+      const productRepositoryTransaction =
         queryRunner.manager.getRepository(ProductEntity)
       dto.link = dto.link.startsWith('/') ? dto.link : `/${dto.link}`
       const checkLinkProduct = await this.productRepository.findOneBy({
@@ -317,8 +307,10 @@ export class ProductService extends CommonService {
       if (checkLinkProduct) {
         throw new BadRequestException('Đường dẫn danh mục sản phẩm đã tồn tại')
       }
-      const product = plainToClass(ProductEntity, dto)
-      const productSaved = await categoryRepositoryTransaction.save(product)
+
+      dto.categoryId = dto.categoryLevel2Id
+      const product = await this.handleMetadataWhenCreateProduct(dto)
+      const productSaved = await productRepositoryTransaction.save(product)
       await this.managerTransaction.commit()
       const response = new BaseResponse(
         'Thêm sản phẩm thành công',
@@ -330,6 +322,7 @@ export class ProductService extends CommonService {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
   }
+
   async updateProducts (dto: UpdateProductDto): Promise<BaseResponse> {
     const queryRunner = await this.managerTransaction.createTransaction()
     try {
@@ -405,70 +398,141 @@ export class ProductService extends CommonService {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
   }
+  spreadOutCategory (arr: CategoryEntity[]) {
+    let i = 0
+    while (i < arr.length) {
+      const cate = arr[i]
+      if (cate.subCategories.length > 0) {
+        arr.push.apply(arr, cate.subCategories)
+      }
+      i++
+    }
+    return arr.map(e => e.id)
+  }
 
-  // spreadOutCategory (arr: CategoryEntity[]) {
-  //   let i = 0
-  //   while (i < arr.length) {
-  //     const cate = arr[i]
-  //     if (cate.subCategories.length > 0) {
-  //       arr.push.apply(arr, cate.subCategories)
-  //     }
-  //     i++
-  //   }
-  //   return arr.map(e => e.id)
-  // }
+  async adminGetAllProducts (dto: SearchDto): Promise<any> {
+    try {
+      // lấy tất cả các category đang hoạt động
+      const findRootCategories =
+        await this.categoryService.getAllCategoriesByAdmin()
+      const categoryId = this.spreadOutCategory(findRootCategories.data)
 
-  // async searchProduct (dto: SearchDto): Promise<any> {
-  //   try {
-  //     const categoryId = await this.getAllCategoriesActive()
-  //     let searchName = 'AND ext.name LIKE :name'
-  //     if (dto.name == null || dto.name.trim() == '') {
-  //       searchName = ''
-  //     }
-  //     const productQueryBuilder = this.productRepository
-  //       .createQueryBuilder('product')
-  //       .innerJoin(
-  //         'product.content',
-  //         'ext',
-  //         `ext.language = :language  ${searchName}`,
-  //         { language: dto.language, name: `%${dto.name}%` },
-  //       )
-  //       .select([
-  //         'product.id',
-  //         'product.link',
-  //         'ext.name',
-  //         'ext.language',
-  //         'ext.description',
-  //       ])
-  //       .where('product.softDeleted = false AND product.isActive = true')
-  //       .andWhere('product.categoryId IN (:categoryId)', {
-  //         categoryId: categoryId,
-  //       })
-  //     const pagination = new Pagination(dto.page, dto.size)
-  //     const result = await productQueryBuilder
-  //       .skip(pagination.skip)
-  //       .take(pagination.size)
-  //       .getManyAndCount()
+      const pagination = new Pagination(dto.page, dto.size)
+      const result = await this.productRepository
+        .createQueryBuilder('product')
+        .innerJoin('product.content', 'ext', 'ext.language = :language', {
+          language: dto.language,
+        })
+        .select([
+          'product.id',
+          'product.link',
+          'product.isActive',
+          'ext.name',
+          'ext.language',
+          'ext.description',
+          'ext.metadata',
+        ])
+        .where('product.softDeleted = false')
+        .andWhere('product.categoryId IN (:categoryId)', {
+          categoryId: categoryId,
+        })
+        .skip(pagination.skip)
+        .take(pagination.size)
+        .getManyAndCount()
 
-  //     const products = result[0].map(product => {
-  //       const ext = product.content[0]
-  //       delete product.content
-  //       return {
-  //         ...product,
-  //         name: ext.name,
-  //         description: ext.description,
-  //       }
-  //     })
-  //     pagination.createResult(result[1])
-  //     const response = new BaseResponse('Kết quả tìm kiếm', {
-  //       products,
-  //       pagination,
-  //     })
-  //     return response
-  //   } catch (error) {
-  //     throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
-  //   }
-  // }
+      // this.handleLanguageGetCategory(dto.language, result[0])
+
+      const products = result[0].map(product => {
+        const ext = product.content[0]
+        let danhMuc1
+        let danhMuc2
+
+        if (ext.metadata) {
+          danhMuc1 = ext.metadata['danhMuc1']
+          danhMuc2 = ext.metadata['danhMuc2']
+        }
+
+        delete product.content
+        return {
+          ...product,
+          name: ext.name,
+          danhMuc1,
+          danhMuc2,
+          description: ext.description,
+        }
+      })
+      pagination.createResult(result[1])
+      const response = new BaseResponse('Kết quả tìm kiếm', {
+        products,
+        pagination,
+      })
+      return response
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }
+  }
+
+  async getAllProduct (dto: SearchDto): Promise<any> {
+    try {
+      const categoryId = await this.getAllCategoriesActive()
+      let searchName = 'AND ext.name LIKE :name'
+      if (dto.name == null || dto.name.trim() == '') {
+        searchName = ''
+      }
+      const productQueryBuilder = this.productRepository
+        .createQueryBuilder('product')
+        .innerJoin(
+          'product.content',
+          'ext',
+          `ext.language = :language  ${searchName}`,
+          { language: dto.language, name: `%${dto.name}%` },
+        )
+        .select([
+          'product.id',
+          'product.link',
+          'ext.name',
+          'ext.language',
+          'ext.description',
+          'ext.metadata',
+        ])
+        .where('product.softDeleted = false AND product.isActive = true')
+        .andWhere('product.categoryId IN (:categoryId)', {
+          categoryId: categoryId,
+        })
+      const pagination = new Pagination(dto.page, dto.size)
+      const result = await productQueryBuilder
+        .skip(pagination.skip)
+        .take(pagination.size)
+        .getManyAndCount()
+
+      const products = result[0].map(product => {
+        const ext = product.content[0]
+        let danhMuc1
+        let danhMuc2
+
+        if (ext.metadata) {
+          danhMuc1 = ext.metadata['danhMuc1']
+          danhMuc2 = ext.metadata['danhMuc2']
+        }
+        delete product.content
+        return {
+          ...product,
+          name: ext.name,
+          danhMuc1,
+          danhMuc2,
+          description: ext.description,
+        }
+      })
+      pagination.createResult(result[1])
+      const response = new BaseResponse('Kết quả tìm kiếm', {
+        products,
+        pagination,
+      })
+      return response
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }
+  }
 
   // async adminSearchProduct (dto: SearchDto): Promise<any> {
   //   try {

@@ -63,10 +63,10 @@ export class CategoryController {
     return this.categoryService.getAllCategoriesByAdmin()
   }
 
-  @Get('get-subcategories')
+  @Get('get-categories-level2')
   // @PublicEndpoint()
-  getSubcategories (@Query('id') id: number): Promise<BaseResponse> {
-    return this.categoryService.getSubCategory(id)
+  getSubcategories (): Promise<BaseResponse> {
+    return this.categoryService.getCategoriesLevel2()
   }
 
   @Post('get-one')

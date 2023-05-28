@@ -10,12 +10,18 @@ export class CreateProductDto extends CreateBaseDto {
   @IsNotEmpty()
   link: string;
 
-  @IsNotEmpty()
-  categoryId: string;
+  // @IsNotEmpty()
+  categoryId: number;
 
   @ApiProperty()
   imageUrl: boolean;
 
   @ApiProperty({ default: '' })
   productContent: ProductContentEntity;
+
+  @IsNotEmpty()
+  categoryLevel1Id: number;
+  @IsNotEmpty()
+  categoryLevel2Id: number;
+
 }
