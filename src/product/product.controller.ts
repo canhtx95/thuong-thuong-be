@@ -10,6 +10,7 @@ import {
   Param,
   Req,
   Query,
+  UploadedFile,
 } from '@nestjs/common'
 
 import { BaseResponse } from 'src/common/response/base.response'
@@ -119,11 +120,18 @@ export class ProductController {
   @UseInterceptors(FileInterceptorProduct)
   async uploadProductImage (
     @UploadedFiles() files: Array<Express.Multer.File>,
+    @Req() req: any,
   ): Promise<any> {
-    console.log(files)
-    console.log(join(__dirname, '..'))
-
-    return files
+    const protocol = req.protocol;
+    const hostname = req.hostname;
+    const port = process.env.PORT;
+    const url = `${protocol}://${hostname}:${port}`;
+    const res = files.map(file => {
+      return `${url}\\uploads\\product\\${file.originalname}`
+    })
+    const callback_function = 1
+    const response = `<script>window.parent.CKEDITOR.tools.callFunction(${callback_function}, '${res[0]}');</script>`
+    return response
   }
   @Delete('admin/:id')
   removeProduct (@Param('id') id: number) {
