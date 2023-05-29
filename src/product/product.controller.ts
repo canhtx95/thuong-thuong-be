@@ -122,16 +122,16 @@ export class ProductController {
     @UploadedFiles() files: Array<Express.Multer.File>,
     @Req() req: any,
   ): Promise<any> {
-    const protocol = req.protocol;
-    const hostname = req.hostname;
-    const port = process.env.PORT;
-    const url = `${protocol}://${hostname}:${port}`;
-    const res = files.map(file => {
-      return `${url}\\uploads\\product\\${file.originalname}`
-    })
-    const callback_function = 1
-    const response = `<script>window.parent.CKEDITOR.tools.callFunction(${callback_function}, '${res[0]}');</script>`
-    return response
+    // const protocol = req.protocol;
+    // const hostname = req.hostname;
+    // const port = process.env.PORT;
+    // const url = `${protocol}://${hostname}:${port}`;
+    // const res = files.map(file => {
+    //   return `${url}\\uploads\\product\\${file.originalname}`
+    // })
+    // const callback_function = 1
+    // const response = `<script>window.parent.CKEDITOR.tools.callFunction(${callback_function}, '${res[0]}');</script>`
+    return files[0]
   }
   @Delete('admin/:id')
   removeProduct (@Param('id') id: number) {
