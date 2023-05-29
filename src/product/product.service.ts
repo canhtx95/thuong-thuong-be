@@ -55,7 +55,7 @@ export class ProductService extends CommonService {
       if (checkParentInActive == true) {
         throw new BadRequestException('Sản phảm này không tồn tại')
       }
-
+      delete product.category
       const extensions = product.content[0]
       return new BaseResponse('Thành công', {
         ...product,
@@ -76,7 +76,6 @@ export class ProductService extends CommonService {
       const product = await this.customProductRepository.adminGetProductDetail(
         dto,
       )
-      delete product.category
       // Kiểm tra danh mục cha có đang hoạt động hay không
       if (!product) {
         throw new BadRequestException('Sản phảm này không tồn tại')
@@ -90,7 +89,15 @@ export class ProductService extends CommonService {
       if (checkParentInActive == true) {
         throw new BadRequestException('Sản phảm này không tồn tại')
       }
-      return new BaseResponse('Thành công', { ...product, title: product.name })
+      delete product.category
+      const metadata = product.content[0].metadata
+
+      return new BaseResponse('Thành công', {
+        ...product,
+        title: product.name,
+        categoryLevel1Id: metadata.danhMuc1.id,
+        categoryLevel2Id: metadata.danhMuc2.id,
+      })
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
@@ -152,14 +159,23 @@ export class ProductService extends CommonService {
 
       const products = result[0].map(product => {
         const content = product.content[0]
+        let danhMuc1
+        let danhMuc2
+        if (content.metadata) {
+          danhMuc1 = content.metadata['danhMuc1']
+          danhMuc2 = content.metadata['danhMuc2']
+        }
         delete product.content
         delete product.isActive
         delete product.softDeleted
+        delete product.category
         return {
           ...product,
           name: content.name,
           title: content.name,
           description: content.description,
+          danhMuc1,
+          danhMuc2,
         }
       })
       const count = result[1]
@@ -222,13 +238,22 @@ export class ProductService extends CommonService {
 
       const products = result[0].map(product => {
         const content = product.content[0]
+        let danhMuc1
+        let danhMuc2
+        if (content.metadata) {
+          danhMuc1 = content.metadata['danhMuc1']
+          danhMuc2 = content.metadata['danhMuc2']
+        }
         delete product.content
+        delete product.category
 
         return {
           ...product,
           name: content.name,
           title: content.name,
           description: content.description,
+          danhMuc1,
+          danhMuc2
         }
       })
       const count = result[1]
@@ -329,7 +354,8 @@ export class ProductService extends CommonService {
       if (checkLinkProduct && checkLinkProduct.id != dto.id) {
         throw new BadRequestException('Đường dẫn danh mục sản phẩm đã tồn tại')
       }
-      let product = plainToClass(ProductEntity, dto)
+      dto.categoryId = dto.categoryLevel2Id
+      const product = await this.handleMetadataWhenCreateProduct(dto)
       const productSaved = await categoryRepositoryTransaction.save(product)
       await this.managerTransaction.commit()
       const response = new BaseResponse(
@@ -472,6 +498,11 @@ export class ProductService extends CommonService {
     }
   }
 
+  /*
+  - name != null: Tìm kiếm theo tên sp
+  - category != null: Tìm kiếm sp theo category
+  - category == null: Lấy toàn bộ sp (có thể lọc theo tên)
+  */
   async getAllProduct (dto: SearchDto): Promise<any> {
     try {
       const categoryId = await this.getAllCategoriesActive()
