@@ -47,6 +47,11 @@ export class CategoryService extends CommonService {
         return level1 - level2
       })
       this.arrangeCategory(data)
+      data.forEach(element => {
+        delete element.parent
+        delete element.isActive
+        delete element.isHighlight
+      })
       return new BaseResponse('Danh sách danh mục sản phẩm', data, 200)
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
@@ -70,7 +75,7 @@ export class CategoryService extends CommonService {
         const level2 = b.parent.split('/').length
         return level1 - level2
       })
-      this.arrangeCategory(data)
+      this.arrangeCategory(data, ROLE.ADMIN)
       return new BaseResponse('Danh sách danh mục sản phẩm', data, 200)
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
@@ -298,28 +303,23 @@ export class CategoryService extends CommonService {
 
   async arrangeCategory (categories: CategoryEntity[], role?) {
     const element = categories[categories.length - 1]
-
-    if (element.parent.trim() == '') {
-      if (role != ROLE.ADMIN) {
-        delete element.parent
-        delete element.isActive
-        delete element.isHighlight
-      }
-      return
+    console.log(element.id)
+    let parentIdStr = element.parent.split('/').pop()
+    if (role != ROLE.ADMIN) {
+      delete element.parent
+      delete element.isActive
+      delete element.isHighlight
     }
-    let parentId = parseInt(element.parent.split('/').pop())
-    for (let cate of categories) {
-      if (parentId == cate.id) {
-        if (role != ROLE.ADMIN) {
-          delete element.parent
-          delete element.isActive
-          delete element.isHighlight
+    if (parentIdStr != '') {
+      for (let cate of categories) {
+        if (parseInt(parentIdStr) == cate.id) {
+          cate.subCategories.push(element)
+          break
         }
-        cate.subCategories.push(element)
-        break
       }
+      categories.pop()
+      this.arrangeCategory(categories, role)
     }
-    categories.pop()
-    this.arrangeCategory(categories, role)
+    return
   }
 }

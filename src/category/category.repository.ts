@@ -77,7 +77,7 @@ export class CustomCategoryRepository {
       .createQueryBuilder('cate')
       .select(['cate.id'])
       .where(
-        `cate.softDeleted = false AND (cate.parent = '' OR cate.parent is null)`
+        `cate.softDeleted = false AND (cate.parent = '' OR cate.parent is null)`,
       )
       .getMany()
     return data

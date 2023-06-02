@@ -1,6 +1,5 @@
 import { isNotEmpty } from 'class-validator'
 import { BaseEntity } from 'src/common/entity/base.entity'
-import { CustomerEntity } from 'src/customer/entities/customer.entity'
 import { ProductEntity } from 'src/product/entity/product.entity'
 import {
   Entity,
@@ -13,30 +12,32 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToOne,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm'
+import { OrderProductEntity } from './order-product.entity'
 @Entity('order')
 export class OrderEntity {
   @PrimaryGeneratedColumn()
   @Index({ unique: true })
   id: number
-  @Column({ name: 'product_id' })
-  productId: number
-  @Column({ name: 'customer_id' })
-  customerId: number
-  @Column()
-  quantity: number
+  @Column({ nullable: true })
+  name: string
+  @Column({ nullable: true })
+  address: string
+  @Column({ nullable: true })
+  phone: string
+  @Column({ nullable: true })
+  email: string
   @Column({ default: 1 })
   status: number
   @Column({ default: false })
   softDeleted: number
 
-  @ManyToOne(() => CustomerEntity, customer => customer.orders)
-  @JoinColumn({ name: 'customer_id' })
-  customer: CustomerEntity
-
-  @OneToOne(() => ProductEntity, product => product.order)
-  @JoinColumn({ name: 'product_id' })
-  product: ProductEntity
+  @OneToMany(() => OrderProductEntity, o => o.order, {
+    cascade: ['insert','remove'],
+  })
+  products: OrderProductEntity[]
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date

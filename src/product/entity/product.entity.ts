@@ -1,4 +1,6 @@
+import { Exclude } from 'class-transformer'
 import { CategoryEntity } from 'src/category/entity/category.entity'
+import { OrderProductEntity } from 'src/order/entities/order-product.entity'
 import { OrderEntity } from 'src/order/entities/order.entity'
 import { ProductContentEntity } from 'src/product/entity/product-content.entity'
 import {
@@ -12,6 +14,8 @@ import {
   OneToOne,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm'
 
 @Entity({ name: 'product' })
@@ -40,11 +44,11 @@ export class ProductEntity {
     cascade: ['insert', 'update'],
   })
   content: ProductContentEntity[]
-
-  @OneToOne(() => OrderEntity, order => order.product, {
-    cascade: ['insert', 'update', 'remove', 'soft-remove'],
+  @Exclude()
+  @OneToMany(() => OrderProductEntity, order => order.product, {
+    cascade: ['update', 'remove'],
   })
-  order: OrderEntity
+  order: OrderProductEntity[]
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date

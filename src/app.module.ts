@@ -14,7 +14,6 @@ import { WebInformationModule } from './web-information/web-information.module'
 import { ServeStaticModule } from '@nestjs/serve-static/dist/serve-static.module'
 import { join } from 'path'
 import { MulterModule } from '@nestjs/platform-express'
-import { CustomerModule } from './customer/customer.module'
 import { BenefactorModule } from './benefactor/benefactor.module'
 
 @Module({
@@ -38,7 +37,6 @@ import { BenefactorModule } from './benefactor/benefactor.module'
     ProductModule,
     OrderModule,
     WebInformationModule,
-    CustomerModule,
     BenefactorModule,
   ],
   controllers: [AppController],
