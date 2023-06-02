@@ -51,13 +51,13 @@ export class OrderService {
   }
   async getOrders (dto: GetOrderDto) {
     try {
-      let searchById = 'AND order.id IN (:id)'
+      let searchById = 'AND order.id = :id'
       let searchByStatus = 'AND order.status = :status'
       let searchByName = `AND order.name LIKE :name`
       let searchByEmail = `AND order.email LIKE :email`
       let searchByPhone = `AND order.phone LIKE :phone`
 
-      if (!dto.ids) {
+      if (!dto.id) {
         searchById = ''
       }
       if (!dto.status) {
@@ -86,7 +86,7 @@ export class OrderService {
         .where(
           `order.softDeleted = 0 ${searchById} ${searchByStatus} ${searchByName} ${searchByEmail} ${searchByPhone} `,
           {
-            id: dto.ids,
+            id: dto.id,
             status: dto.status,
             email: `%${dto.email}%`,
             phone: `%${dto.phone}%`,
