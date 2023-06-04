@@ -4,7 +4,7 @@ export class WebInformationEntity {
   @PrimaryGeneratedColumn()
   @Index({ unique: true })
   id: number
-  @Column()
+  @Column({ type: 'text' })
   key: string
   @Column()
   value: string
