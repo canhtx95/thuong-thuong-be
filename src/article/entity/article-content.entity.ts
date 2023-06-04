@@ -29,4 +29,7 @@ export class ArticleContentEntity {
   @ManyToOne(() => ArticleEntity, article => article.content)
   @JoinColumn({ name: 'article_id' })
   article: ArticleEntity
+
+  @Column({ nullable: false, type: 'json' })
+  breadCrumb: any
 }

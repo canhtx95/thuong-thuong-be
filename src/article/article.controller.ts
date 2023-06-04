@@ -2,9 +2,11 @@ import {
   Controller,
   Post,
   Body,
+  Get,
   UseGuards,
   UploadedFiles,
   UseInterceptors,
+  Query,
 } from '@nestjs/common'
 import { ApiTags, ApiOperation } from '@nestjs/swagger'
 import { ArticleService } from './article.service'
@@ -26,16 +28,18 @@ export class ArticleController {
 
   @ApiOperation({ summary: 'Xem chi tiết bài viết bằng link hoặc id' })
   @PublicEndpoint()
-  @Post('')
-  getArticleByIdOrLink (@Body() dto: getArticleDto): Promise<BaseResponse> {
+  @Get('')
+  getArticleByIdOrLink (@Query() dto: getArticleDto): Promise<BaseResponse> {
     return this.articleService.getArticleByIdOrLink(dto)
   }
 
   @ApiOperation({
     summary: 'Xem chi tiết bài viết bằng link hoặc id - quyền admin',
   })
-  @Post('/admin/get-detail')
-  adminGetArticleByIdOrLink (@Body() dto: getArticleDto): Promise<BaseResponse> {
+  @Get('/admin/get-detail')
+  adminGetArticleByIdOrLink (
+    @Query() dto: getArticleDto,
+  ): Promise<BaseResponse> {
     return this.articleService.adminGetArticleByIdOrLink(dto)
   }
 
@@ -75,12 +79,13 @@ export class ArticleController {
   }
 
   @ApiOperation({ summary: 'upload image for article' })
-  @Post('upload')
+  @Post('admin/upload')
+  // @PublicEndpoint()
   @UseInterceptors(FileInterceptorArticle)
-  async uploadProductImage (
+  async uploadArticleImage (
     @UploadedFiles() files: Array<Express.Multer.File>,
   ): Promise<any> {
-    return files
+    return files[0]
   }
 
   @ApiOperation({ summary: 'Seach ' })

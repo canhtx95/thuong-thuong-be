@@ -18,6 +18,7 @@ import { MenuEntity } from 'src/menu/entity/menu.entity'
 import { Pagination } from 'src/common/service/pagination.service'
 import { SearchDto } from 'src/common/dto/search.dto'
 import { MenuService } from 'src/menu/menu.service'
+import { ArticleContentEntity } from './entity/article-content.entity'
 @Injectable()
 export class ArticleService extends CommonService {
   constructor (
@@ -38,8 +39,16 @@ export class ArticleService extends CommonService {
 
       const menuDto = await this.menuRepository
         .createQueryBuilder('menu')
+        .leftJoinAndSelect('menu.parent', 'parent')
         .where('menu.softDeleted = false AND menu.isActive = true')
-        .select(['menu.id', 'menu.name', 'menu.link'])
+        .select([
+          'menu.id',
+          'menu.name',
+          'menu.link',
+          'parent.id',
+          'parent.link',
+          'parent.name',
+        ])
         .andWhere('(menu.id =:id OR menu.link =:link)', {
           id: dto.id,
           link: dto.link,
@@ -77,6 +86,12 @@ export class ArticleService extends CommonService {
         .getManyAndCount()
 
       menuDto.name = this.getNameMultiLanguage(dto.language, menuDto.name)
+      if (menuDto?.parent?.name) {
+        menuDto.parent.name = this.getNameMultiLanguage(
+          dto.language,
+          menuDto.parent.name,
+        )
+      }
       const articles = result[0].map(art => {
         const content = art.content[0]
         delete art.content
@@ -172,7 +187,7 @@ export class ArticleService extends CommonService {
     try {
       let article = await this.articleRepository
         .createQueryBuilder('art')
-        .innerJoinAndSelect(
+        .innerJoin(
           'art.menu',
           'menu',
           'menu.softDeleted = false AND menu.isActive = true',
@@ -183,7 +198,7 @@ export class ArticleService extends CommonService {
           'content.language =:language',
           { language: dto.language },
         )
-        .select(['art', 'menu.id', 'menu.link', 'menu.name', 'content'])
+        .select(['art', 'content'])
         .where('art.softDeleted = false AND art.isActive = true')
         .andWhere('(art.id =:id OR art.link =:link)', {
           id: dto.id,
@@ -210,6 +225,7 @@ export class ArticleService extends CommonService {
         name: extensions.name,
         description: extensions.description,
         content: extensions.content,
+        breadCrumb: extensions.breadCrumb,
       })
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
@@ -243,7 +259,43 @@ export class ArticleService extends CommonService {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
   }
-
+  async handleBreadCrumbMenu (
+    menuId: string,
+    articleExtension: ArticleContentEntity[],
+  ) {
+    const menu = await this.menuRepository
+      .createQueryBuilder('menu')
+      .where('id = :id', { id: menuId })
+      .andWhere('menu.softDeleted = false')
+      .getOne()
+    if (!menu) {
+      throw new Error('Menu không tồn tại')
+    } else if (menu.isActive == false) {
+      throw new Error('Menu đang bị ẩn')
+    }
+    const menuAncestor = await this.dataSource.manager
+      .getTreeRepository(MenuEntity)
+      .createAncestorsQueryBuilder('menu', 'menu-closure', menu)
+      .getMany()
+    if (menuAncestor.length == 0) {
+      throw new Error('Menu cấp cha không tồn tại')
+    } else {
+      menuAncestor.forEach(m => {
+        if (m.softDeleted == true) {
+          throw new Error('Menu cấp cha không tồn tại')
+        }
+        if (m.isActive == false)
+          throw new Error('Menu cấp cha đang không hoạt động')
+      })
+    }
+    articleExtension.forEach(ext => {
+      const language = ext.language
+      const breadCrumb = menuAncestor.map(menu => {
+        return { id: menu.id, link: menu.link, menu: menu.name[language] }
+      })
+      ext.breadCrumb = breadCrumb
+    })
+  }
   async createArticle (dto: CreateArticleDto): Promise<BaseResponse> {
     try {
       let result
@@ -253,6 +305,7 @@ export class ArticleService extends CommonService {
         if (checkLink) {
           throw new Error('Đường dẫn đã tồn tại')
         }
+        await this.handleBreadCrumbMenu(dto.menuId, dto.content)
         const article = plainToClass(ArticleEntity, dto)
         result = await repository.save(article)
       })
