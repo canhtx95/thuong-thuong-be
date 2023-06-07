@@ -6,8 +6,9 @@ import { join } from 'path'
 
 async function bootstrap () {
   const app = await NestFactory.create(AppModule)
-  app.useGlobalPipes(new ValidationPipe({transform:true}))
-  app.enableCors();
+  app.useGlobalPipes(new ValidationPipe({ transform: true }))
+  app.enableCors()
+  // app.setGlobalPrefix('api')
   SwaggerFactory.create(app)
   await app.listen(process.env.PORT)
 }

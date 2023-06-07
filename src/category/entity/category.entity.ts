@@ -32,4 +32,6 @@ export class CategoryEntity extends BaseEntity {
   products: ProductEntity[];
 
   subCategories: CategoryEntity[] = [];
+  parentCategory: CategoryEntity;
+
 }

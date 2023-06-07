@@ -41,7 +41,13 @@ export class ProductService extends CommonService {
   }
 
   async getProductDetail (dto: GetProductDetailDto): Promise<BaseResponse> {
+
     try {
+      if (dto.productLink) {
+        dto.productLink = dto.productLink.startsWith('/')
+          ? dto.productLink
+          : `/${dto.productLink}`
+      }
       const product = await this.customProductRepository.getProductDetail(dto)
       // Kiểm tra danh mục cha có đang hoạt động hay không
       if (!product) {
@@ -146,17 +152,17 @@ export class ProductService extends CommonService {
         pagination,
         dto.language,
       )
-      if (category) {
-        const categoryName = this.getNameMultiLanguage(
-          dto.language,
-          category.name,
-        )
-        category.name = categoryName ? categoryName : category.name
-        delete category.isActive
-        delete category.parent
-        delete category.isHighlight
-      }
-
+      // if (category) {
+      //   const categoryName = this.getNameMultiLanguage(
+      //     dto.language,
+      //     category.name,
+      //   )
+      //   category.name = categoryName ? categoryName : category.name
+      //   delete category.isActive
+      //   delete category.parent
+      //   delete category.isHighlight
+      // }
+      await this.handleCategoryWhenGetProduct(dto.language, category)
       const products = result[0].map(product => {
         const content = product.content[0]
         let danhMuc1
@@ -188,6 +194,36 @@ export class ProductService extends CommonService {
       return response
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }
+  }
+  async handleCategoryWhenGetProduct (
+    language: string,
+    category: CategoryEntity,
+  ) {
+    if (category) {
+      const categoryName = this.getNameMultiLanguage(
+        language.toUpperCase(),
+        category.name,
+      )
+      category.name = categoryName ? categoryName : category.name
+      if (category.parent != '') {
+        const id = category.parent.split('/').pop()
+        const parentCategory = await this.customCategoryRep.getParentCategory(
+          id,
+        )
+        const parentCategoryName = this.getNameMultiLanguage(
+          language.toUpperCase(),
+          parentCategory.name,
+        )
+        parentCategory.name = parentCategoryName
+        delete parentCategory.isActive
+        delete parentCategory.parent
+        delete parentCategory.isHighlight
+        category.parentCategory = parentCategory
+      }
+      delete category.isActive
+      delete category.parent
+      delete category.isHighlight
     }
   }
   async adminGetProductsByCategory (dto: GetProductsDto): Promise<BaseResponse> {
@@ -253,7 +289,7 @@ export class ProductService extends CommonService {
           title: content.name,
           description: content.description,
           danhMuc1,
-          danhMuc2
+          danhMuc2,
         }
       })
       const count = result[1]
@@ -446,7 +482,7 @@ export class ProductService extends CommonService {
         .innerJoin(
           'product.content',
           'ext',
-          `ext.language = :language  ${searchName}`,
+          `LOWER(ext.language) = LOWER(:language) ${searchName}`,
           { language: dto.language, name: `%${dto.name}%` },
         )
         .select([
@@ -481,6 +517,7 @@ export class ProductService extends CommonService {
         delete product.content
         return {
           ...product,
+          title: ext.name,
           name: ext.name,
           danhMuc1,
           danhMuc2,
@@ -500,11 +537,10 @@ export class ProductService extends CommonService {
 
   /*
   - name != null: Tìm kiếm theo tên sp
-  - category != null: Tìm kiếm sp theo category
-  - category == null: Lấy toàn bộ sp (có thể lọc theo tên)
   */
   async getAllProduct (dto: SearchDto): Promise<any> {
     try {
+      const language = dto.language.toUpperCase()
       const categoryId = await this.getAllCategoriesActive()
       let searchName = 'AND ext.name LIKE :name'
       if (dto.name == null || dto.name.trim() == '') {
@@ -515,12 +551,13 @@ export class ProductService extends CommonService {
         .innerJoin(
           'product.content',
           'ext',
-          `ext.language = :language  ${searchName}`,
-          { language: dto.language, name: `%${dto.name}%` },
+          `ext.language = :language ${searchName}`,
+          { language: language, name: `%${dto.name}%` },
         )
         .select([
           'product.id',
           'product.link',
+          'product.imageUrl',
           'ext.name',
           'ext.language',
           'ext.description',
@@ -549,6 +586,7 @@ export class ProductService extends CommonService {
         return {
           ...product,
           name: ext.name,
+          title: ext.name,
           danhMuc1,
           danhMuc2,
           description: ext.description,

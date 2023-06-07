@@ -54,7 +54,8 @@ export class CategoryController {
   @PublicEndpoint()
   @Get('')
   getCategory (@Query('language') language: string): Promise<BaseResponse> {
-    return this.categoryService.getAllCategories(language)
+    language = language == 'undefined' ? 'VI' : language
+    return this.categoryService.getAllCategories(language.toUpperCase())
   }
 
   @ApiOperation({ summary: 'Lấy hết category - quyền admin' })

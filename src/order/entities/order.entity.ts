@@ -7,13 +7,8 @@ import {
   PrimaryGeneratedColumn,
   Index,
   OneToMany,
-  JoinColumn,
-  ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
-  OneToOne,
-  ManyToMany,
-  JoinTable,
 } from 'typeorm'
 import { OrderProductEntity } from './order-product.entity'
 @Entity('order')

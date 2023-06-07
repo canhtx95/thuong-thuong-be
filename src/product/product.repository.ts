@@ -56,6 +56,7 @@ export class CustomProductRepository {
     return products
   }
   async getProductDetail (dto: GetProductDetailDto): Promise<any> {
+    const language = dto.language.toUpperCase()
     let product = await this.productRepository
       .createQueryBuilder('product')
       .innerJoinAndSelect(
@@ -67,7 +68,7 @@ export class CustomProductRepository {
         'product.content',
         'content',
         'content.language =:language',
-        { language: dto.language },
+        { language: language },
       )
       .select([
         'product.id',
