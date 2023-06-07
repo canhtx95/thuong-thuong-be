@@ -1,6 +1,6 @@
-import { isNotEmpty } from 'class-validator'
-import { BaseEntity } from 'src/common/entity/base.entity'
-import { ProductEntity } from 'src/product/entity/product.entity'
+import { isNotEmpty } from 'class-validator';
+import { BaseEntity } from 'src/common/entity/base.entity';
+import { ProductEntity } from 'src/product/entity/product.entity';
 import {
   Entity,
   Column,
@@ -9,33 +9,37 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
-} from 'typeorm'
-import { OrderProductEntity } from './order-product.entity'
+} from 'typeorm';
+import { OrderProductEntity } from './order-product.entity';
 @Entity('order')
 export class OrderEntity {
   @PrimaryGeneratedColumn()
   @Index({ unique: true })
-  id: number
+  id: number;
   @Column({ nullable: true })
-  name: string
+  name: string;
   @Column({ nullable: true })
-  address: string
+  address: string;
   @Column({ nullable: true })
-  phone: string
+  phone: string;
   @Column({ nullable: true })
-  email: string
+  email: string;
+  @Column({ nullable: true })
+  time: string;
+  @Column({ nullable: true })
+  description: string;
   @Column({ default: 1 })
-  status: number
+  status: number;
   @Column({ default: false })
-  softDeleted: number
+  softDeleted: number;
 
-  @OneToMany(() => OrderProductEntity, o => o.order, {
-    cascade: ['insert','remove'],
+  @OneToMany(() => OrderProductEntity, (o) => o.order, {
+    cascade: ['insert', 'remove'],
   })
-  products: OrderProductEntity[]
+  products: OrderProductEntity[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
-  createdAt: Date
+  createdAt: Date;
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
-  updatedAt: Date
+  updatedAt: Date;
 }
