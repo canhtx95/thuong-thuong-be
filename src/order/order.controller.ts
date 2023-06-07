@@ -3,7 +3,7 @@ import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { GetOrderDto } from './dto/get-order.dto';
 import { UpdateStatusDto } from './dto/update-status.dto';
-import { JwtAuthGuard } from 'src/auth/guard/jwt.guard';
+import { JwtAuthGuard, PublicEndpoint } from 'src/auth/guard/jwt.guard';
 
 @Controller('order')
 @UseGuards(JwtAuthGuard)
@@ -11,6 +11,7 @@ export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
   @Post('create')
+  @PublicEndpoint()
   async create(@Body() createOrderDto: CreateOrderDto) {
     console.log(createOrderDto);
     return await this.orderService.create(createOrderDto);
