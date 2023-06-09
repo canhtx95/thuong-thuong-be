@@ -80,7 +80,7 @@ export class ArticleController {
 
   @ApiOperation({ summary: 'upload image for article' })
   @Post('admin/upload')
-  // @PublicEndpoint()
+  @PublicEndpoint()
   @UseInterceptors(FileInterceptorArticle)
   async uploadArticleImage (
     @UploadedFiles() files: Array<Express.Multer.File>,
@@ -88,6 +88,7 @@ export class ArticleController {
     return files[0]
   }
 
+  // không sử dụng
   @ApiOperation({ summary: 'Seach ' })
   @PublicEndpoint()
   @Post('search')
@@ -95,6 +96,7 @@ export class ArticleController {
     return this.articleService.searchArticles(dto)
   }
 
+  // không sử dụng
   @ApiOperation({ summary: 'Seach  - quyền admin' })
   @Post('admin/search')
   async adminSearchProducts (@Body() dto: SearchDto): Promise<BaseResponse> {

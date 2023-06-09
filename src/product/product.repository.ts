@@ -26,10 +26,20 @@ export class CustomProductRepository {
     paging: Pagination,
     language: string,
     role?: string,
+    productName?: string,
   ): Promise<[ProductEntity[], number]> {
+    let searchName = ''
+    if (productName) {
+      searchName = `AND content.name LIKE :name`
+    }
     const createQueryBuilder = this.productRepository
       .createQueryBuilder('product')
-      .leftJoinAndSelect('product.content', 'content')
+      .innerJoinAndSelect(
+        'product.content',
+        'content',
+        `content.language = :language ${searchName}`,
+        { language: language, name: `%${productName}%` },
+      )
       .select([
         'product.id',
         'product.link',
@@ -40,7 +50,7 @@ export class CustomProductRepository {
       ])
       .where('1=1')
       .andWhere('product.categoryId IN (:id)', { id: id })
-      .andWhere('content.language = :language', { language: language })
+    // .andWhere('content.language = :language', { language: language })
 
     if (role == ROLE.ADMIN) {
       createQueryBuilder.andWhere('product.softDeleted = false')
@@ -56,7 +66,6 @@ export class CustomProductRepository {
     return products
   }
   async getProductDetail (dto: GetProductDetailDto): Promise<any> {
-    const language = dto.language.toUpperCase()
     let product = await this.productRepository
       .createQueryBuilder('product')
       .innerJoinAndSelect(
@@ -67,8 +76,8 @@ export class CustomProductRepository {
       .innerJoinAndSelect(
         'product.content',
         'content',
-        'content.language =:language',
-        { language: language },
+        'LOWER(content.language) = LOWER(:language)',
+        { language: dto.language },
       )
       .select([
         'product.id',

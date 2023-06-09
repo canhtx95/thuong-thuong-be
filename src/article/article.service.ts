@@ -36,62 +36,62 @@ export class ArticleService extends CommonService {
     try {
       const menuTreeRepository =
         await this.dataSource.manager.getTreeRepository(MenuEntity)
-
-      const menuDto = await this.menuRepository
-        .createQueryBuilder('menu')
-        .leftJoinAndSelect('menu.parent', 'parent')
-        .where('menu.softDeleted = false AND menu.isActive = true')
-        .select([
-          'menu.id',
-          'menu.name',
-          'menu.link',
-          'parent.id',
-          'parent.link',
-          'parent.name',
-        ])
-        .andWhere('(menu.id =:id OR menu.link =:link)', {
-          id: dto.id,
-          link: dto.link,
-        })
-        .getOne()
-      if (!menuDto) {
-        throw new Error('Menu không tồn tại')
+      let menuToFind = []
+      let searchName = ''
+      if (dto.name) {
+        searchName = ` AND LOWER(content.name) LIKE LOWER(:name)`
       }
-      const menuAncestor = await menuTreeRepository.findAncestors(menuDto)
-      if (
-        menuAncestor.some(e => e.isActive == false || e.softDeleted == true)
-      ) {
-        throw new Error('Menu không tồn tại')
+      if (dto.id == null && dto.link == null) {
+        menuToFind = await this.menuService
+          .getAllMenu(null)
+          .then(res => this.spreadOutMenu(res.data))
+      } else {
+        const menuDto = await this.menuRepository
+          .createQueryBuilder('menu')
+          .leftJoinAndSelect('menu.parent', 'parent')
+          .where('menu.softDeleted = false AND menu.isActive = true')
+          .andWhere('(menu.id =:id OR menu.link =:link)', {
+            id: dto.id,
+            link: dto.link,
+          })
+          .getOne()
+        if (!menuDto) {
+          throw new Error('Menu không tồn tại')
+        }
+        const menuAncestor = await menuTreeRepository.findAncestors(menuDto)
+        if (
+          menuAncestor.some(e => e.isActive == false || e.softDeleted == true)
+        ) {
+          throw new Error('Menu không tồn tại')
+        }
+        menuToFind = await menuTreeRepository
+          .findDescendants(menuDto)
+          .then(menu => menu.map(m => m.id))
       }
-      const menuDescendantsId = await menuTreeRepository
-        .findDescendants(menuDto)
-        .then(menu => menu.map(m => m.id))
-      // const menuDescendantsId = menuDescendants.map(e => e.id)
       const pagination = new Pagination(dto.page, dto.size)
       const result = await this.articleRepository
         .createQueryBuilder('art')
         .innerJoinAndSelect(
           'art.content',
           'content',
-          'content.language = :language',
-          { language: dto.language },
+          `LOWER(content.language) = LOWER(:language) ${searchName}`,
+          { language: dto.language, name: `%${dto.name}%` },
         )
-        .select(['art.id', 'art.link', 'content'])
+        .select([
+          'art.id',
+          'art.link',
+          'art.imageUrl',
+          'art.createdAt',
+          'content',
+        ])
         .where('(art.softDeleted = false AND art.isActive = true)')
         .andWhere('art.menuId IN (:id)', {
-          id: menuDescendantsId,
+          id: menuToFind,
         })
         .skip(pagination.skip)
         .take(pagination.size)
         .getManyAndCount()
 
-      menuDto.name = this.getNameMultiLanguage(dto.language, menuDto.name)
-      if (menuDto?.parent?.name) {
-        menuDto.parent.name = this.getNameMultiLanguage(
-          dto.language,
-          menuDto.parent.name,
-        )
-      }
       const articles = result[0].map(art => {
         const content = art.content[0]
         delete art.content
@@ -106,7 +106,7 @@ export class ArticleService extends CommonService {
       pagination.createResult(total)
 
       const response = new BaseResponse('Lấy dữ liệu thành công', {
-        menu: menuDto,
+        // menu: menuDto,
         articles,
         pagination,
       })
@@ -185,6 +185,7 @@ export class ArticleService extends CommonService {
 
   async getArticleByIdOrLink (dto: getArticleDto): Promise<BaseResponse> {
     try {
+      const link = dto.link.startsWith('/') ? dto.link : `/${dto.link}`
       let article = await this.articleRepository
         .createQueryBuilder('art')
         .innerJoin(
@@ -195,14 +196,14 @@ export class ArticleService extends CommonService {
         .innerJoinAndSelect(
           'art.content',
           'content',
-          'content.language =:language',
+          'LOWER(content.language) =LOWER(:language)',
           { language: dto.language },
         )
         .select(['art', 'content'])
         .where('art.softDeleted = false AND art.isActive = true')
         .andWhere('(art.id =:id OR art.link =:link)', {
           id: dto.id,
-          link: dto.link,
+          link: link,
         })
         .getOne()
       if (!article) {
@@ -370,8 +371,10 @@ export class ArticleService extends CommonService {
     return arr.map(e => e.id)
   }
 
+  // KHÔNG SỬ DỤNG
   async searchArticles (dto: SearchDto): Promise<any> {
     try {
+      const language = dto.language.toUpperCase()
       // lấy tất cả các Menu đang hoạt động
       const menuId = await this.menuService
         .getAllMenu(null)
@@ -383,7 +386,7 @@ export class ArticleService extends CommonService {
           'ext',
           'ext.language = :language ' +
             (dto.name ? ' AND ext.name LIKE :name' : ''),
-          { language: dto.language, name: `%${dto.name}%` },
+          { language: language, name: `%${dto.name}%` },
         )
         .select([
           'art.id',

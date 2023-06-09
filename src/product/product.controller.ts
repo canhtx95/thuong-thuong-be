@@ -116,7 +116,7 @@ export class ProductController {
 
   @ApiOperation({ summary: 'upload image for Product' })
   @Post('admin/upload')
-  // @PublicEndpoint()
+  @PublicEndpoint()
   @UseInterceptors(FileInterceptorProduct)
   async uploadProductImage (
     @UploadedFiles() files: Array<Express.Multer.File>,

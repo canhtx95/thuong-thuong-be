@@ -7,4 +7,5 @@ export class getArticleDto extends BaseDto {
   @ApiProperty({ example: '/tranh-giay' })
   link: string
 
+  name: string
 }

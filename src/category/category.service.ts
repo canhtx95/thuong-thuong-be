@@ -303,7 +303,6 @@ export class CategoryService extends CommonService {
 
   async arrangeCategory (categories: CategoryEntity[], role?) {
     const element = categories[categories.length - 1]
-    console.log(element.id)
     let parentIdStr = element.parent.split('/').pop()
     if (role != ROLE.ADMIN) {
       delete element.parent

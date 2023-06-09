@@ -8,4 +8,6 @@ export class GetProductsDto extends BaseDto {
     // productLink: string;
     categoryId: number;
     categoryLink: string;
+    productName: string;
+
 }

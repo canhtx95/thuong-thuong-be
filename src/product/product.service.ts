@@ -41,7 +41,6 @@ export class ProductService extends CommonService {
   }
 
   async getProductDetail (dto: GetProductDetailDto): Promise<BaseResponse> {
-
     try {
       if (dto.productLink) {
         dto.productLink = dto.productLink.startsWith('/')
@@ -151,6 +150,8 @@ export class ProductService extends CommonService {
         categoryIds,
         pagination,
         dto.language,
+        null,
+        dto.productName
       )
       // if (category) {
       //   const categoryName = this.getNameMultiLanguage(
@@ -196,13 +197,15 @@ export class ProductService extends CommonService {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
   }
+
+  
   async handleCategoryWhenGetProduct (
     language: string,
     category: CategoryEntity,
   ) {
     if (category) {
       const categoryName = this.getNameMultiLanguage(
-        language.toUpperCase(),
+        language,
         category.name,
       )
       category.name = categoryName ? categoryName : category.name
@@ -212,7 +215,7 @@ export class ProductService extends CommonService {
           id,
         )
         const parentCategoryName = this.getNameMultiLanguage(
-          language.toUpperCase(),
+          language,
           parentCategory.name,
         )
         parentCategory.name = parentCategoryName
@@ -538,10 +541,15 @@ export class ProductService extends CommonService {
   /*
   - name != null: Tìm kiếm theo tên sp
   */
+ // KHÔNG SỬ DỤNG
   async getAllProduct (dto: SearchDto): Promise<any> {
     try {
       const language = dto.language.toUpperCase()
-      const categoryId = await this.getAllCategoriesActive()
+      let categoryId = dto.categoryId
+      if (!categoryId) {
+        //search tất cả
+        categoryId = await this.getAllCategoriesActive()
+      }
       let searchName = 'AND ext.name LIKE :name'
       if (dto.name == null || dto.name.trim() == '') {
         searchName = ''

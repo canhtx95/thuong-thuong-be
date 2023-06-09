@@ -16,7 +16,8 @@ export function configStorage (dest: string) {
     storage: diskStorage({
       destination: `./uploads/${dest}`,
       filename: (req, file, cb) => {
-        return cb(null, file.originalname)
+        const fileName = Date.now() + '-' + file.originalname
+        return cb(null, fileName)
       },
     }),
     fileFilter: imageFileFilter,
@@ -30,7 +31,7 @@ export const FileInterceptorProduct = FilesInterceptor(
   configStorage('product'),
 )
 export const FileInterceptorArticle = FilesInterceptor(
-  'upload',
+  'file',
   20,
   configStorage('article'),
 )
