@@ -40,6 +40,7 @@ export class ProductController {
     return this.productService.addProducts(dto)
   }
 
+  //API để search, get luôn
   @ApiOperation({ summary: 'Lấy danh sách sản phẩm theo category' })
   @PublicEndpoint()
   @Post('')

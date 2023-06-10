@@ -43,15 +43,21 @@ export class ArticleController {
     return this.articleService.adminGetArticleByIdOrLink(dto)
   }
 
-  @ApiOperation({ summary: 'lấy các bài viết bằng link hoặc id của menu' })
+  // API NÀY ĐỂ LÀM CÁC CHỨC NĂNG CHINH NHƯ SEARCH THEO TÊN, GET BY MENU ID/LINK,
+  @ApiOperation({
+    summary:
+      'lấy các bài viết bằng link hoặc id của menu, còn để seach, get all',
+  })
   @PublicEndpoint()
   @Post('get-by-menu')
   getArticleByMenuIdOrLink (@Body() dto: getArticleDto): Promise<BaseResponse> {
     return this.articleService.getArticleByMenuIdOrLink(dto)
   }
 
+  // API NÀY ĐỂ LÀM CÁC CHỨC NĂNG CHINH NHƯ SEARCH THEO TÊN, GET BY MENU ID/LINK,
   @ApiOperation({
-    summary: 'lấy các bài viết bằng link hoặc id của menu - quyền admin',
+    summary:
+      'lấy các bài viết bằng link hoặc id của menu, còn để seach, get all - quyền admin',
   })
   @Post('admin/get-by-menu')
   adminGetArticleByMenuIdOrLink (

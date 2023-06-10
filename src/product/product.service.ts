@@ -19,7 +19,7 @@ import { CustomProductRepository } from './product.repository'
 import { UpdateStatusDto } from 'src/common/dto/update-status.dto'
 import { CategoryEntity } from 'src/category/entity/category.entity'
 import { CommonService } from 'src/common/service/service.common'
-import { ROLE } from 'src/common/constant'
+import { ROLE, language } from 'src/common/constant'
 import { CustomCategoryRepository } from 'src/category/category.repository'
 import { Pagination } from 'src/common/service/pagination.service'
 import { SearchDto } from '../common/dto/search.dto'
@@ -435,7 +435,7 @@ export class ProductService extends CommonService {
   }
 
   async getAllCategoriesActive () {
-    const data = await this.categoryService.getAllCategories(null)
+    const data = await this.categoryService.getAllCategories(language.VIETNAMESE)
     let i = 0
     const findRootCategories = data.data
     while (i < findRootCategories.length) {

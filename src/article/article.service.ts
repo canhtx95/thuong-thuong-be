@@ -122,6 +122,85 @@ export class ArticleService extends CommonService {
     try {
       const menuTreeRepository =
         await this.dataSource.manager.getTreeRepository(MenuEntity)
+      let menuToFind = []
+      let searchName = ''
+      if (dto.name) {
+        searchName = ` AND LOWER(content.name) LIKE LOWER(:name)`
+      }
+      if (dto.id == null && dto.link == null) {
+        menuToFind = await this.menuService
+          .adminGetAllMenu()
+          .then(res => this.spreadOutMenu(res.data))
+      } else {
+        const menuDto = await this.menuRepository
+          .createQueryBuilder('menu')
+          .leftJoinAndSelect('menu.parent', 'parent')
+          .where('menu.softDeleted = false AND menu.isActive = true')
+          .andWhere('(menu.id =:id OR menu.link =:link)', {
+            id: dto.id,
+            link: dto.link,
+          })
+          .getOne()
+        if (!menuDto) {
+          throw new Error('Menu không tồn tại')
+        }
+        const menuAncestor = await menuTreeRepository.findAncestors(menuDto)
+        if (
+          menuAncestor.some(e => e.isActive == false || e.softDeleted == true)
+        ) {
+          throw new Error('Menu không tồn tại')
+        }
+        menuToFind = await menuTreeRepository
+          .findDescendants(menuDto)
+          .then(menu => menu.map(m => m.id))
+      }
+      const pagination = new Pagination(dto.page, dto.size)
+      const result = await this.articleRepository
+        .createQueryBuilder('art')
+        .innerJoinAndSelect(
+          'art.content',
+          'content',
+          `LOWER(content.language) = LOWER(:language) ${searchName}`,
+          { language: dto.language, name: `%${dto.name}%` },
+        )
+        .where('(art.softDeleted = false AND art.isActive = true)')
+        .andWhere('art.menuId IN (:id)', {
+          id: menuToFind,
+        })
+        // .skip(pagination.skip)
+        // .take(pagination.size)
+        .getManyAndCount()
+
+      const articles = result[0].map(art => {
+        const content = art.content[0]
+        delete art.content
+        return {
+          ...art,
+          name: content.name,
+          title: content.name,
+          description: content.description,
+        }
+      })
+      let total = result[1]
+      pagination.createResult(total)
+
+      const response = new BaseResponse('Lấy dữ liệu thành công', {
+        // menu: menuDto,
+        articles,
+        pagination,
+      })
+      return response
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+    }
+  }
+
+  async adminGetArticleByMenuIdOrLink2 (
+    dto: getArticleDto,
+  ): Promise<BaseResponse> {
+    try {
+      const menuTreeRepository =
+        await this.dataSource.manager.getTreeRepository(MenuEntity)
 
       const menuDto = await this.menuRepository
         .createQueryBuilder('menu')
