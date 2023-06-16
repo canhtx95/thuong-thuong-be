@@ -91,7 +91,9 @@ export class ArticleController {
   async uploadArticleImage (
     @UploadedFiles() files: Array<Express.Multer.File>,
   ): Promise<any> {
-    return files[0]
+    const path = files[0].path.replace(/\\/g, '/')
+    const res = { ...files[0], path }
+    return res
   }
 
   // không sử dụng

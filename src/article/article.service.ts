@@ -135,7 +135,7 @@ export class ArticleService extends CommonService {
         const menuDto = await this.menuRepository
           .createQueryBuilder('menu')
           .leftJoinAndSelect('menu.parent', 'parent')
-          .where('menu.softDeleted = false AND menu.isActive = true')
+          .where('menu.softDeleted = false ')
           .andWhere('(menu.id =:id OR menu.link =:link)', {
             id: dto.id,
             link: dto.link,
@@ -145,14 +145,25 @@ export class ArticleService extends CommonService {
           throw new Error('Menu không tồn tại')
         }
         const menuAncestor = await menuTreeRepository.findAncestors(menuDto)
-        if (
-          menuAncestor.some(e => e.isActive == false || e.softDeleted == true)
-        ) {
+        if (menuAncestor.some(e => e.softDeleted == true)) {
           throw new Error('Menu không tồn tại')
         }
         menuToFind = await menuTreeRepository
           .findDescendants(menuDto)
           .then(menu => menu.map(m => m.id))
+      }
+      let searchFromDate = ''
+      let searchToDate = ''
+      let searchStatus = ''
+
+      if (dto.fromDate) {
+        searchFromDate = ` AND art.created_at >=  STR_TO_DATE('${dto.fromDate}', '%d/%m/%Y')`
+      }
+      if (dto.toDate) {
+        searchToDate = ` AND art.created_at <= STR_TO_DATE('${dto.toDate}', '%d/%m/%Y')`
+      }
+      if (dto.status != null) {
+        searchStatus = `AND art.isActive = ${dto.status}`
       }
       const pagination = new Pagination(dto.page, dto.size)
       const result = await this.articleRepository
@@ -163,10 +174,13 @@ export class ArticleService extends CommonService {
           `LOWER(content.language) = LOWER(:language) ${searchName}`,
           { language: dto.language, name: `%${dto.name}%` },
         )
-        .where('(art.softDeleted = false AND art.isActive = true)')
-        .andWhere('art.menuId IN (:id)', {
-          id: menuToFind,
-        })
+        .where('art.softDeleted = false')
+        .andWhere(
+          `art.menuId IN (:id) ${searchStatus} ${searchFromDate} ${searchToDate}`,
+          {
+            id: menuToFind,
+          },
+        )
         // .skip(pagination.skip)
         // .take(pagination.size)
         .getManyAndCount()
@@ -176,6 +190,8 @@ export class ArticleService extends CommonService {
         delete art.content
         return {
           ...art,
+          createdAt: this.formmatDate(art.createdAt, this.DDMMYY_ssMMHH),
+          updatedAt: this.formmatDate(art.updatedAt, this.DDMMYY_ssMMHH),
           name: content.name,
           title: content.name,
           description: content.description,
@@ -186,73 +202,6 @@ export class ArticleService extends CommonService {
 
       const response = new BaseResponse('Lấy dữ liệu thành công', {
         // menu: menuDto,
-        articles,
-        pagination,
-      })
-      return response
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
-    }
-  }
-
-  async adminGetArticleByMenuIdOrLink2 (
-    dto: getArticleDto,
-  ): Promise<BaseResponse> {
-    try {
-      const menuTreeRepository =
-        await this.dataSource.manager.getTreeRepository(MenuEntity)
-
-      const menuDto = await this.menuRepository
-        .createQueryBuilder('menu')
-        .where('menu.softDeleted = false')
-        .andWhere('(menu.id =:id OR menu.link =:link)', {
-          id: dto.id,
-          link: dto.link,
-        })
-        .getOne()
-      if (!menuDto) {
-        throw new Error('Menu không tồn tại')
-      }
-      const menuAncestor = await menuTreeRepository.findAncestors(menuDto)
-      if (menuAncestor.some(e => e.softDeleted == true)) {
-        throw new Error('Menu không tồn tại')
-      }
-      const menuDescendantsId = await menuTreeRepository
-        .findDescendants(menuDto)
-        .then(menu => menu.map(m => m.id))
-      // const menuDescendantsId = menuDescendants.map(e => e.id)
-      const pagination = new Pagination(dto.page, dto.size)
-      const result = await this.articleRepository
-        .createQueryBuilder('art')
-        .innerJoinAndSelect(
-          'art.content',
-          'content',
-          'content.language = :language',
-          { language: dto.language },
-        )
-        .where('art.softDeleted = false')
-        .andWhere('art.menuId IN (:id)', {
-          id: menuDescendantsId,
-        })
-        .skip(pagination.skip)
-        .take(pagination.size)
-        .getManyAndCount()
-
-      menuDto.name = this.getNameMultiLanguage(dto.language, menuDto.name)
-      const articles = result[0].map(art => {
-        const content = art.content[0]
-        delete art.content
-        return {
-          ...art,
-          name: content.name,
-          description: content.description,
-        }
-      })
-      let total = result[1]
-      pagination.createResult(total)
-
-      const response = new BaseResponse('Lấy dữ liệu thành công', {
-        menu: menuDto,
         articles,
         pagination,
       })
@@ -334,13 +283,19 @@ export class ArticleService extends CommonService {
       if (menuAncestor.some(e => e.softDeleted == true)) {
         throw new Error('Bài viết không tồn tại')
       }
-      return new BaseResponse('Lấy dữ liệu thành công', article)
+      delete article.menu
+      const extensions = article.content[0]
+      return new BaseResponse('Lấy dữ liệu thành công', {
+        ...article,
+        breadCrumb: extensions.breadCrumb,
+      })
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
   }
+
   async handleBreadCrumbMenu (
-    menuId: string,
+    menuId: string | number,
     articleExtension: ArticleContentEntity[],
   ) {
     const menu = await this.menuRepository
@@ -395,12 +350,17 @@ export class ArticleService extends CommonService {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
   }
+  async getAllContentOfArticle (id: number) {
+    const content = this.articleRepository.findOneBy
+  }
 
   async updateArticle (dto: UpdateArticleDto): Promise<BaseResponse> {
     try {
       let result
       await this.dataSource.manager.transaction(async transaction => {
         const repository = transaction.getRepository(ArticleEntity)
+        const repositoryExt = transaction.getRepository(ArticleContentEntity)
+
         const checkLink = await repository.findOneBy({ link: dto.link })
         if (checkLink && checkLink.id != dto.id) {
           throw new Error('Đường dẫn đã tồn tại')
@@ -414,6 +374,24 @@ export class ArticleService extends CommonService {
         for (const m of menuAncestor) {
           if (m.softDeleted == true) throw new Error('Menu không tồn tại')
         }
+
+        // let oldContent = (
+        //   await repository.findOne({
+        //     where: { id: dto.id },
+        //     relations: ['content'],
+        //   })
+        // ).content
+        // const newContent = oldContent.reduce((acc, cur) => {
+        //   const language = cur.language
+        //   const findContentInDto = dto.content.find(e => e.language == language)
+        //   if (findContentInDto) acc.push(findContentInDto)
+        //   else acc.push(cur)
+        //   return acc
+        // }, [])
+        // dto.content = newContent
+
+        await this.handleBreadCrumbMenu(dto.menuId, dto.content)
+
         const article = plainToClass(ArticleEntity, dto)
         result = await repository.save(article)
       })
@@ -429,8 +407,11 @@ export class ArticleService extends CommonService {
       let result
       await this.dataSource.manager.transaction(async transaction => {
         const repository = transaction.getRepository(ArticleEntity)
-        const article = plainToClass(ArticleEntity, dto)
-        result = await repository.save(article)
+        // const article = plainToClass(ArticleEntity, dto)
+        const articles = dto.ids.map(id => {
+          return { ...plainToClass(ArticleEntity, dto), id: id }
+        })
+        result = await repository.save(articles)
       })
       const response = new BaseResponse('Cập nhật bài viết thành công', result)
       return response

@@ -1,5 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger'
 import { IsNotEmpty } from 'class-validator'
+import { ArticleEntity } from '../entity/article.entity'
+import { ArticleContentEntity } from '../entity/article-content.entity'
 export class UpdateArticleDto {
   @ApiProperty({ example: 1 })
   @IsNotEmpty()
@@ -17,4 +19,5 @@ export class UpdateArticleDto {
   otherLanguage: Object
   @ApiProperty()
   imageUrl: string
+  content: ArticleContentEntity[]
 }

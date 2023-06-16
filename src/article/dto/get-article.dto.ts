@@ -8,4 +8,7 @@ export class getArticleDto extends BaseDto {
   link: string
 
   name: string
+  status: boolean
+  fromDate: Date
+  toDate: Date
 }

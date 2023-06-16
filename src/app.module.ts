@@ -15,6 +15,7 @@ import { ServeStaticModule } from '@nestjs/serve-static/dist/serve-static.module
 import { join } from 'path'
 import { MulterModule } from '@nestjs/platform-express'
 import { BenefactorModule } from './benefactor/benefactor.module'
+import { ContactModule } from './contact/contact.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { BenefactorModule } from './benefactor/benefactor.module'
     OrderModule,
     WebInformationModule,
     BenefactorModule,
+    ContactModule,
   ],
   controllers: [AppController],
   providers: [],

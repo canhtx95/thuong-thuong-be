@@ -2,9 +2,9 @@ import { FilesInterceptor } from '@nestjs/platform-express'
 import { diskStorage } from 'multer'
 import { BadRequestException } from '@nestjs/common'
 export const imageFileFilter = (req, file, callback) => {
-  if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+  if (!file.originalname.match(/\.(GIF|PNG|JPG|PNG|jpg|jpeg|png|gif)$/)) {
     return callback(
-      new BadRequestException('Only image files are allowed!'),
+      new BadRequestException('Định dạng ảnh không hợp l!'),
       false,
     )
   }
