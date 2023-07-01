@@ -46,7 +46,7 @@ export class CategoryService extends CommonService {
         const level2 = b.parent.split('/').length
         return level1 - level2
       })
-      this.arrangeCategory(data)
+      this.arrangeCategory(data);
       data.forEach(element => {
         delete element.parent
         delete element.isActive
@@ -302,23 +302,27 @@ export class CategoryService extends CommonService {
   }
 
   async arrangeCategory (categories: CategoryEntity[], role?) {
-    const element = categories[categories.length - 1]
-    let parentIdStr = element.parent.split('/').pop()
-    if (role != ROLE.ADMIN) {
-      delete element.parent
-      delete element.isActive
-      delete element.isHighlight
-    }
-    if (parentIdStr != '') {
-      for (let cate of categories) {
-        if (parseInt(parentIdStr) == cate.id) {
-          cate.subCategories.push(element)
-          break
-        }
+    try {
+      const element = categories[categories.length - 1];
+      let parentIdStr = element?.parent?.split('/').pop();
+      if (role != ROLE.ADMIN) {
+        delete element.parent;
+        delete element.isActive;
+        delete element.isHighlight;
       }
-      categories.pop()
-      this.arrangeCategory(categories, role)
+      if (parentIdStr != '') {
+        for (let cate of categories) {
+          if (parseInt(parentIdStr) == cate.id) {
+            cate.subCategories.push(element);
+            break;
+          }
+        }
+        categories.pop();
+        this.arrangeCategory(categories, role);
+      }
+    } catch (error) {
+      // throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
-    return
+    return;
   }
 }
