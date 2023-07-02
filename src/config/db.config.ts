@@ -1,8 +1,8 @@
-import { config, DotenvConfigOutput } from 'dotenv'
-import { join } from 'path'
-const envFound: DotenvConfigOutput = config()
+import { config, DotenvConfigOutput } from 'dotenv';
+import { join } from 'path';
+const envFound: DotenvConfigOutput = config();
 if (!envFound) {
-  throw new Error('.env file was not found.')
+  throw new Error('.env file was not found.');
 }
 
 export const databaseConfig = {
@@ -14,4 +14,7 @@ export const databaseConfig = {
   database: process.env.DB_NAME,
   entities: [join(__dirname, '/../**/**.entity{.ts,.js}')],
   synchronize: true,
-}
+  charset: 'utf8mb4',
+  collation: 'utf8mb4_unicode_ci',
+  //caccc
+};

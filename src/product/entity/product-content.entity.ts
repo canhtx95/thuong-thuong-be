@@ -1,7 +1,7 @@
-import { CategoryEntity } from 'src/category/entity/category.entity'
-import { BaseEntity } from 'src/common/entity/base.entity'
-import { ProductEntity } from 'src/product/entity/product.entity'
-import { Type } from 'class-transformer'
+import { CategoryEntity } from 'src/category/entity/category.entity';
+import { BaseEntity } from 'src/common/entity/base.entity';
+import { ProductEntity } from 'src/product/entity/product.entity';
+import { Type } from 'class-transformer';
 
 import {
   Entity,
@@ -11,26 +11,26 @@ import {
   ManyToOne,
   JoinColumn,
   OneToOne,
-} from 'typeorm'
+} from 'typeorm';
 
 @Entity({ name: 'product_content' })
 export class ProductContentEntity {
   @PrimaryGeneratedColumn()
   @Index({ unique: true })
-  id: number
+  id: number;
   @Column()
-  language: string
+  language: string;
   @Column({ type: 'text' })
-  content: string
+  content: string;
   @Column({ name: 'product_id' })
-  productId: number
+  productId: number;
   @Column()
-  name: string
+  name: string;
   @Column()
-  description: string
-  @ManyToOne(() => ProductEntity, product => product.content)
+  description: string;
+  @ManyToOne(() => ProductEntity, (product) => product.content)
   @JoinColumn({ name: 'product_id' })
-  product: ProductEntity
+  product: ProductEntity;
   @Column({ nullable: false, type: 'json' })
-  metadata: any
+  metadata: any;
 }

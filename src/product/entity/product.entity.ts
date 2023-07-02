@@ -1,8 +1,8 @@
-import { Exclude } from 'class-transformer'
-import { CategoryEntity } from 'src/category/entity/category.entity'
-import { OrderProductEntity } from 'src/order/entities/order-product.entity'
-import { OrderEntity } from 'src/order/entities/order.entity'
-import { ProductContentEntity } from 'src/product/entity/product-content.entity'
+import { Exclude } from 'class-transformer';
+import { CategoryEntity } from 'src/category/entity/category.entity';
+import { OrderProductEntity } from 'src/order/entities/order-product.entity';
+import { OrderEntity } from 'src/order/entities/order.entity';
+import { ProductContentEntity } from 'src/product/entity/product-content.entity';
 import {
   Entity,
   Column,
@@ -16,42 +16,42 @@ import {
   UpdateDateColumn,
   ManyToMany,
   JoinTable,
-} from 'typeorm'
+} from 'typeorm';
 
 @Entity({ name: 'product' })
 export class ProductEntity {
   @PrimaryGeneratedColumn()
   @Index({ unique: true })
-  id: number
+  id: number;
   @Column()
-  link: string
+  link: string;
   @Column({ default: true })
-  isActive: boolean
+  isActive: boolean;
   @Column({ nullable: true })
-  price: number
+  price: number;
   @Column({ name: 'soft_deleted', default: false })
-  softDeleted: boolean
+  softDeleted: boolean;
   @Column({ name: 'img_link', nullable: true })
-  imageUrl: string
+  imageUrl: string;
 
   @Column({ name: 'category_id' })
-  categoryId: string
-  @ManyToOne(() => CategoryEntity, category => category.products)
+  categoryId: string;
+  @ManyToOne(() => CategoryEntity, (category) => category.products)
   @JoinColumn({ name: 'category_id' })
-  category: CategoryEntity
+  category: CategoryEntity;
 
-  @OneToMany(() => ProductContentEntity, content => content.product, {
+  @OneToMany(() => ProductContentEntity, (content) => content.product, {
     cascade: ['insert', 'update'],
   })
-  content: ProductContentEntity[]
+  content: ProductContentEntity[];
   @Exclude()
-  @OneToMany(() => OrderProductEntity, order => order.product, {
+  @OneToMany(() => OrderProductEntity, (order) => order.product, {
     cascade: ['update', 'remove'],
   })
-  order: OrderProductEntity[]
+  order: OrderProductEntity[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
-  createdAt: Date
+  createdAt: Date;
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
-  updatedAt: Date
+  updatedAt: Date;
 }
