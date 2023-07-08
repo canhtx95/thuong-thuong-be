@@ -46,6 +46,7 @@ export class CustomProductRepository {
         'product.isActive',
         'product.softDeleted',
         'product.imageUrl',
+        'product.isHighlight',
         'content',
       ])
       .where('1=1')
@@ -88,6 +89,7 @@ export class CustomProductRepository {
         'category.id',
         'category.name',
         'category.link',
+        'product.isHighlight',
         'content',
       ])
 

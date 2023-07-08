@@ -5,4 +5,8 @@ export class SearchDto extends BaseDto  {
 
   name: string
   categoryId: number
+  isHighlight: boolean
+  isActive: boolean
+
+
 }

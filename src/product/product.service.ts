@@ -472,12 +472,16 @@ export class ProductService extends CommonService {
   }
 
   async adminGetAllProducts(dto: SearchDto): Promise<any> {
-    try {
+  try {
       // lấy tất cả các category đang hoạt động
       const findRootCategories =
         await this.categoryService.getAllCategoriesByAdmin();
       const categoryId = this.spreadOutCategory(findRootCategories.data);
       let searchName = 'AND ext.name LIKE :name';
+      let isHighlight = '';
+      if (dto.isHighlight != null) {
+        isHighlight = ` AND product.isHighlight = ${dto.isHighlight}`;
+      }
       if (dto.name == null || dto.name.trim() == '') {
         searchName = '';
       }
@@ -500,7 +504,7 @@ export class ProductService extends CommonService {
           'ext.metadata',
         ])
         .where('product.softDeleted = false')
-        .andWhere('product.categoryId IN (:categoryId)', {
+        .andWhere(`product.categoryId IN (:categoryId) ${isHighlight}`, {
           categoryId: categoryId,
         })
         .skip(pagination.skip)
@@ -548,6 +552,10 @@ export class ProductService extends CommonService {
     try {
       const language = dto.language.toUpperCase();
       let categoryId = dto.categoryId;
+      let isHighlight = '';
+      if (dto.isHighlight != null) {
+        isHighlight = ` AND product.isHighlight = ${dto.isHighlight}`;
+      }
       if (!categoryId) {
         //search tất cả
         categoryId = await this.getAllCategoriesActive();
@@ -556,6 +564,7 @@ export class ProductService extends CommonService {
       if (dto.name == null || dto.name.trim() == '') {
         searchName = '';
       }
+      
       const productQueryBuilder = this.productRepository
         .createQueryBuilder('product')
         .innerJoin(
@@ -568,15 +577,16 @@ export class ProductService extends CommonService {
           'product.id',
           'product.link',
           'product.imageUrl',
+          'product.isHighlight',
           'ext.name',
           'ext.language',
           'ext.description',
           'ext.metadata',
         ])
         .where('product.softDeleted = false AND product.isActive = true')
-        .andWhere('product.categoryId IN (:categoryId)', {
+        .andWhere(`product.categoryId IN (:categoryId) ${isHighlight}`, {
           categoryId: categoryId,
-        });
+        })
       const pagination = new Pagination(dto.page, dto.size);
       const result = await productQueryBuilder
         .skip(pagination.skip)

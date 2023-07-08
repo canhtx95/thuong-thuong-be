@@ -10,4 +10,7 @@ export class UpdateStatusDto {
 
   @ApiProperty({ example: true })
   softDeleted: boolean
+
+  @ApiProperty({ example: true })
+  isHighlight: boolean
 }

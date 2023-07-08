@@ -36,6 +36,10 @@ export class ProductEntity {
 
   @Column({ name: 'category_id' })
   categoryId: string;
+
+  @Column({ name: 'isHighlight', default: false })
+  isHighlight: boolean;
+
   @ManyToOne(() => CategoryEntity, (category) => category.products)
   @JoinColumn({ name: 'category_id' })
   category: CategoryEntity;
