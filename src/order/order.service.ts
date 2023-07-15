@@ -3,37 +3,41 @@ import {
   HttpStatus,
   Injectable,
   BadRequestException,
-} from '@nestjs/common'
-import { CreateOrderDto } from './dto/create-order.dto'
-import { UpdateStatusDto } from './dto/update-status.dto'
-import { plainToClass } from 'class-transformer'
-import { OrderEntity } from './entities/order.entity'
-import { InjectRepository } from '@nestjs/typeorm'
-import { Repository } from 'typeorm'
-import { ProductEntity } from 'src/product/entity/product.entity'
-import { BaseResponse } from 'src/common/response/base.response'
-import { GetOrderDto } from './dto/get-order.dto'
-import { Pagination } from 'src/common/service/pagination.service'
+} from '@nestjs/common';
+import { CreateOrderDto } from './dto/create-order.dto';
+import { UpdateStatusDto } from './dto/update-status.dto';
+import { plainToClass } from 'class-transformer';
+import { OrderEntity } from './entities/order.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ProductEntity } from 'src/product/entity/product.entity';
+import { BaseResponse } from 'src/common/response/base.response';
+import { GetOrderDto } from './dto/get-order.dto';
+import { Pagination } from 'src/common/service/pagination.service';
+import { WebsocketGateway } from './websocket.gateway';
 
 @Injectable()
 export class OrderService {
-  constructor (
+  constructor(
     @InjectRepository(OrderEntity)
     private readonly orderRepository: Repository<OrderEntity>,
     @InjectRepository(ProductEntity)
     private readonly productRepository: Repository<ProductEntity>,
+    private readonly websocketGateway: WebsocketGateway,
   ) {}
 
-  async create (dto: CreateOrderDto) {
+  async create(dto: CreateOrderDto) {
     try {
-      dto.products.forEach(e => {
-        if (e.quantity <= 0) throw new Error('Số lượng sản phẩm không hợp lệ')
-      })
-      const order = plainToClass(OrderEntity, dto)
-      const res = await this.orderRepository.save(order)
-      return new BaseResponse('Tạo đơn hàng thành công', res, 200)
+      dto.products.forEach((e) => {
+        if (e.quantity <= 0) throw new Error('Số lượng sản phẩm không hợp lệ');
+      });
+      const order = plainToClass(OrderEntity, dto);
+      const res = await this.orderRepository.save(order);
+      // Gửi tin nhắn đến client thông qua WebSocketGateway
+      this.websocketGateway.server.emit('orderCreated', res);
+      return new BaseResponse('Tạo đơn hàng thành công', res, 200);
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
   async updateStatus (dto: UpdateStatusDto) {
