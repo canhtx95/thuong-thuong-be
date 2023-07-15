@@ -10,9 +10,10 @@ import { JwtAuthGuard, PublicEndpoint } from 'src/auth/guard/jwt.guard';
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 
+  @PublicEndpoint()
   @Post('create')
-  async create (@Body() createOrderDto: CreateOrderDto) {
-    return await this.orderService.create(createOrderDto)
+  async create(@Body() createOrderDto: CreateOrderDto) {
+    return await this.orderService.create(createOrderDto);
   }
   @Post()
   async getOrder(@Body() dto: GetOrderDto) {
