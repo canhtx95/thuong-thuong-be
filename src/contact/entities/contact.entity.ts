@@ -1,25 +1,27 @@
-import { STATUS } from 'src/common/constant'
-import { BaseEntity } from 'src/common/entity/base.entity'
-import { ProductEntity } from 'src/product/entity/product.entity'
+import { STATUS } from 'src/common/constant';
+import { BaseEntity } from 'src/common/entity/base.entity';
+import { ProductEntity } from 'src/product/entity/product.entity';
 import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
   Index,
   OneToMany,
-} from 'typeorm'
+} from 'typeorm';
 
 @Entity({ name: 'contact' })
 export class Contact extends BaseEntity {
   @PrimaryGeneratedColumn()
   @Index({ unique: true })
-  id: number
+  id: number;
   @Column({ nullable: false })
-  name: string
+  name: string;
   @Column({ nullable: true })
-  email: string
+  email: string;
   @Column({ nullable: false })
-  phone: string
-  @Column({ nullable: false, default: STATUS.CHUA_XU_LY })
-  status: number
+  phone: string;
+  @Column({ nullable: false, default: STATUS.DA_XU_LY })
+  status: number;
+  @Column({ default: false })
+  softDeleted: number;
 }

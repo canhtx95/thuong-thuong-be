@@ -14,7 +14,7 @@ import { ProductEntity } from 'src/product/entity/product.entity';
 import { BaseResponse } from 'src/common/response/base.response';
 import { GetOrderDto } from './dto/get-order.dto';
 import { Pagination } from 'src/common/service/pagination.service';
-import { WebsocketGateway } from './websocket.gateway';
+import { WebsocketGateway } from 'src/config/websocket.gateway';
 
 @Injectable()
 export class OrderService {
@@ -40,15 +40,15 @@ export class OrderService {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
-  async updateStatus (dto: UpdateStatusDto) {
+  async updateStatus(dto: UpdateStatusDto) {
     try {
-      const order = plainToClass(OrderEntity, dto)
-      const res = await this.orderRepository.save(order)
+      const order = plainToClass(OrderEntity, dto);
+      const res = await this.orderRepository.save(order);
       return new BaseResponse(
         'Cập nhật trạng thái đơn hàng thành công',
         res,
         200,
-      )
+      );
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }
