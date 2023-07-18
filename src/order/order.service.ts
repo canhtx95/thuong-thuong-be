@@ -64,7 +64,7 @@ export class OrderService {
       if (!dto.id) {
         searchById = ''
       }
-      if (!dto.status) {
+      if (dto.status !== 0 && dto.status !== 1) {
         searchByStatus = ''
       }
       if (!dto.email) {
@@ -97,17 +97,19 @@ export class OrderService {
             name: `%${dto.name}%`,
           },
         )
+        .orderBy('order.id', 'DESC')
         .skip(pagination.skip)
         .take(pagination.size)
-        .getManyAndCount()
-      const orders = data[0].map(order => {
-        const products = order.products.map(p => {
-          const id = p.product.id
-          const name = p.product.content[0].name
-          const quantity = p.quantity
-          const imageUrl = p.product.imageUrl
-          const isActive = p.product.isActive
-          const link = p.product.link
+        .getManyAndCount();
+
+      const orders = data[0].map((order) => {
+        const products = order.products.map((p) => {
+          const id = p.product.id;
+          const name = p.product.content[0].name;
+          const quantity = p.quantity;
+          const imageUrl = p.product.imageUrl;
+          const isActive = p.product.isActive;
+          const link = p.product.link;
           return {
             id,
             name,
@@ -115,15 +117,15 @@ export class OrderService {
             imageUrl,
             isActive,
             link,
-          }
-        })
-        return { ...order, products }
-      })
-      pagination.createResult(data[1])
+          };
+        });
+        return { ...order, products };
+      });
+      pagination.createResult(data[1]);
       return new BaseResponse('Thông tin đơn hàng', {
         orders: orders,
         pagination,
-      })
+      });
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST)
     }

@@ -84,7 +84,7 @@ export class ContactService {
       if (!dto.id) {
         searchById = '';
       }
-      if (!dto.status) {
+      if (dto.status !== 0 && dto.status !== 1) {
         searchByStatus = '';
       }
       if (!dto.email) {
@@ -109,6 +109,7 @@ export class ContactService {
             name: `%${dto.name}%`,
           },
         )
+        .orderBy('contact.id', 'DESC')
         .skip(pagination.skip)
         .take(pagination.size)
         .getManyAndCount();
