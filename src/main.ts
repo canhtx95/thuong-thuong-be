@@ -9,7 +9,11 @@ async function bootstrap() {
 
   // Cấu hình CORS
   app.enableCors({
-    origin: ['http://localhost:3000'], // Các nguồn origin cho phép
+    origin: ['http://localhost:3000',
+            'http://localhost:3002', 
+            'https://thuongthuonghandmade.vn',
+            'https://critistudio.top',
+          ], // Các nguồn origin cho phép
     credentials: true, // Cho phép chia sẻ cookie và thông tin xác thực
   });
 
