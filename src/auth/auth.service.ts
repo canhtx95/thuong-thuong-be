@@ -9,7 +9,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common'
-import * as bcrypt from 'bcrypt'
+// import * as bcrypt from 'bcrypt'
 import { UserEntity } from 'src/users/entity/users.entity'
 import { Repository } from 'typeorm'
 import { InjectRepository } from '@nestjs/typeorm'
@@ -41,7 +41,8 @@ export class AuthService {
       if (!checkUser) {
         throw new Error('Tài khoản không chính xác')
       }
-      const isMatch = await bcrypt.compare(dto.password, checkUser.password)
+      // const isMatch = await bcrypt.compare(dto.password, checkUser.password)
+      const isMatch = dto.password == checkUser.password
       if (!isMatch) {
         throw new Error('Mật khẩu không chính xác')
       }

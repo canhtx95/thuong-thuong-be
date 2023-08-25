@@ -2,6 +2,7 @@ import { ExecutionContext, Injectable } from '@nestjs/common'
 import { AuthGuard } from '@nestjs/passport'
 import { Reflector } from '@nestjs/core'
 import { SetMetadata } from '@nestjs/common'
+import { Observable } from 'rxjs'
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
@@ -9,12 +10,12 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     super()
   }
 
-  canActivate (context: ExecutionContext) {
+async canActivate (context: ExecutionContext):  Promise<any> {
     const isPublic = this.reflector.get<string>('public', context.getHandler())
     if (isPublic) {
       return true
     }
-    return super.canActivate(context)
+    return await super.canActivate(context)
   }
 }
 

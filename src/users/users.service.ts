@@ -5,7 +5,7 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common'
-import * as bcrypt from 'bcrypt'
+// import * as bcrypt from 'bcrypt'
 
 import { InjectRepository } from '@nestjs/typeorm'
 import { DataSource, Repository } from 'typeorm'
@@ -36,8 +36,8 @@ export class UsersService {
       if (checkUser) {
         throw new Error('Tài khoản đã tồn tại')
       }
-      const hashPwd = await bcrypt.hash(dto.password, 10)
-      dto.password = hashPwd
+      // const hashPwd = await bcrypt.hash(dto.password, 10)
+      // dto.password = hashPwd
       const user = plainToClass(UserEntity, dto)
       const result = await userRepositoryTransaction.save(user)
       await this.managerTransaction.commit()
@@ -63,7 +63,8 @@ export class UsersService {
       if (!checkUser) {
         throw new Error('Tài khoản không tồn tại')
       }
-      const isMatch = await bcrypt.compare(dto.password, checkUser.password)
+      // const isMatch = await bcrypt.compare(dto.password, checkUser.password)
+      const isMatch = dto.password == checkUser.password
       if (!isMatch) {
         throw new Error('Mật khẩu không chính xác')
       }
